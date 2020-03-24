@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <title>MongoChat Client</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link data-th-href="@{/css/bootstrap.min.css}" rel="stylesheet">
+    <link data-th-href="@{/css/main.css}" rel="stylesheet">
+</head>
+<body>
+<div id="console-container">
+    <div id="console"></div>
+</div>
+<footer class="shad-up" id="footer">
+    <div class="input-group p-3">
+        <input type="text" class="form-control" id="msg-input">
+        <button class="btn btn-primary ml-2" type="button" id="btn-submit">Send</button>
+    </div>
+</footer>
+<script data-th-src="@{/js/main.js}"></script>
+</body>
+</html>
