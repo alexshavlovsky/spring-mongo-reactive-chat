@@ -1,7 +1,7 @@
 // ws connection
 
 const wsBaseUrl = (l = window.location) => ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + ":" + l.port;
-const WS_API_URL = wsBaseUrl() + '/messages/';
+const WS_API_URL = wsBaseUrl() + '/ws/';
 
 let wsClient;
 

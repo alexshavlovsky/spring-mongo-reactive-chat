@@ -12,10 +12,12 @@ import java.util.Date;
 @Data
 @RequiredArgsConstructor
 @Document
-@TypeAlias("message")
+@TypeAlias("messages")
 public class Message {
     @Id
     private String id;
+    @NonNull
+    private String nickName;
     @NonNull
     private String text;
     private Date timestamp = new Date();
