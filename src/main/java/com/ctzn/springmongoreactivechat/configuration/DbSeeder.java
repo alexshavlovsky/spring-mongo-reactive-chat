@@ -2,6 +2,7 @@ package com.ctzn.springmongoreactivechat.configuration;
 
 import com.ctzn.springmongoreactivechat.domain.Message;
 import com.ctzn.springmongoreactivechat.domain.User;
+import com.ctzn.springmongoreactivechat.repository.MessageRepository;
 import com.ctzn.springmongoreactivechat.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -14,10 +15,12 @@ import reactor.core.publisher.Mono;
 public class DbSeeder {
 
     private UserRepository userRepository;
+    private MessageRepository messageRepository;
     private ReactiveMongoTemplate template;
 
-    public DbSeeder(UserRepository userRepository, ReactiveMongoTemplate template) {
+    public DbSeeder(UserRepository userRepository, MessageRepository messageRepository, ReactiveMongoTemplate template) {
         this.userRepository = userRepository;
+        this.messageRepository = messageRepository;
         this.template = template;
     }
 
@@ -27,7 +30,10 @@ public class DbSeeder {
             CollectionOptions options = CollectionOptions.empty().capped().size(1024 * 1024).maxDocuments(100);
             template.collectionExists(Message.class)
                     .flatMap(e -> e ? template.dropCollection(Message.class) : Mono.empty())
-                    .switchIfEmpty(template.createCollection(Message.class, options).then()).subscribe();
+                    .switchIfEmpty(template.createCollection(Message.class, options).then())
+                    .switchIfEmpty(messageRepository.save(new Message("info","Server","Service started")).then())
+                    .subscribe();
+
             userRepository.deleteAll().doOnSuccess(
                     v -> userRepository.save(new User("TestUser")).doOnNext(System.out::println).subscribe()
             ).subscribe();

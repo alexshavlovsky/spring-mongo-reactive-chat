@@ -1,6 +1,5 @@
 package com.ctzn.springmongoreactivechat.websocket;
 
-import com.ctzn.springmongoreactivechat.domain.ChatEvent;
 import com.ctzn.springmongoreactivechat.domain.Message;
 import com.ctzn.springmongoreactivechat.repository.MessageRepository;
 import org.springframework.stereotype.Component;
@@ -8,7 +7,6 @@ import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.util.UriTemplate;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -31,9 +29,8 @@ public class MessageHandler implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        Flux<String> g = messageRepository.findAllMessages().map(ChatEvent::fromMessage).map(ChatEvent::asJson);
-        return session.send(g.map(session::textMessage))
+        return session.send(messageRepository.findAllMessages().map(Message::asJson).map(session::textMessage))
                 .and(session.receive().map(WebSocketMessage::getPayloadAsText)
-                        .flatMap(x -> messageRepository.save(new Message("nick", x))));
+                        .flatMap(x -> messageRepository.save(new Message("msg", "Guest", x))));
     }
 }

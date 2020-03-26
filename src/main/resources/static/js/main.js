@@ -23,10 +23,12 @@ function ws_init() {
 function wsDispatcher(event) {
     try {
         let json = JSON.parse(event.data);
-        let time = new Date(Date.parse(json.time));
+        let time = new Date(json.timestamp);
         json.ago = (Date.now() - time) / 1000;
-        json.time = ("0" + time.getHours()).slice(-2) + ":" + ("0" + time.getMinutes()).slice(-2);
-        if (json.type === 'log') adaptLog(json);
+        json.time = ("0" + time.getHours()).slice(-2) + ":" + ("0" + time.getMinutes()).slice(-2) + ":" + ("0" + time.getSeconds()).slice(-2);
+        console.log(json);
+        if (json.type === 'info') adaptInfo(json.time + ' ' + json.text);
+        if (json.type === 'error') adaptError(json.time + ' ' + json.text);
         if (json.type === 'msg') adaptMsg(json);
         return;
     } catch (e) {
@@ -57,11 +59,6 @@ function send() {
 
 // backend message adapters
 
-function adaptLog(ev) {
-    let s = ev.time + ' ' + ev.message;
-    if (ev.payload1 === 'ERROR') adaptError(s); else adaptInfo(s);
-}
-
 function adaptError(s) {
     let el = document.createElement('p');
     el.classList.add('text-center', 'fs-80', 'text-danger');
@@ -78,15 +75,16 @@ function adaptInfo(s) {
 
 function adaptMsg(ev) {
     let el = document.createElement('p');
-    el.classList.add('msg', 'shad', ev.payload2 === '<' ? 'msg-inc' : 'msg-out');
-    if (ev.ago < 10) el.classList.add(ev.payload2 === '<' ? 'scale-in-bl' : 'scale-in-br');
-    el.innerHTML = ev.message;
+    ev.dir = ">";
+    el.classList.add('msg', 'shad', ev.dir === '<' ? 'msg-inc' : 'msg-out');
+    if (ev.ago < 10) el.classList.add(ev.dir === '<' ? 'scale-in-bl' : 'scale-in-br');
+    el.innerHTML = ev.text;
     appendToConsole(el);
 
     el = document.createElement('p');
-    el.classList.add('fs-80', ev.payload2 === '<' ? 'text-left' : 'text-right');
-    if (ev.payload2 === '>') el.innerHTML = ev.time + '<span class="ml-2 font-weight-bold">' + ev.payload1 + '</span>';
-    else el.innerHTML = '<span class="mr-2 font-weight-bold">' + ev.payload1 + '</span>' + ev.time;
+    el.classList.add('fs-80', ev.dir === '<' ? 'text-left' : 'text-right');
+    if (ev.dir === '>') el.innerHTML = ev.time + '<span class="ml-2 font-weight-bold">' + ev.author + '</span>';
+    else el.innerHTML = '<span class="mr-2 font-weight-bold">' + ev.author + '</span>' + ev.time;
     appendToConsole(el);
 }
 
