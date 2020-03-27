@@ -1,3 +1,14 @@
+// client UUID resolver
+
+const LS_UUID_KEY = "client-uuid";
+const newUuid = () => ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+const loadUuid = () => {
+    if (localStorage.getItem(LS_UUID_KEY) == null) localStorage.setItem(LS_UUID_KEY, newUuid());
+    return localStorage.getItem(LS_UUID_KEY);
+};
+const CLIENT_ID = loadUuid();
+
 // ws connection
 
 const wsBaseUrl = (l = window.location) => ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + ":" + l.port;
@@ -53,7 +64,7 @@ function sendOnEnter(event) {
 
 function send() {
     if (elInput.value === "") return;
-    wsClient.send(elInput.value);
+    wsClient.send(JSON.stringify({clientId: CLIENT_ID, messageText: elInput.value}));
     elInput.value = "";
 }
 

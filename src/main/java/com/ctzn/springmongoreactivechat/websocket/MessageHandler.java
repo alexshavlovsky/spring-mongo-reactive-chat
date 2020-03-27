@@ -1,12 +1,19 @@
 package com.ctzn.springmongoreactivechat.websocket;
 
+import com.ctzn.springmongoreactivechat.domain.DomainMapper;
+import com.ctzn.springmongoreactivechat.domain.IncomingMessage;
 import com.ctzn.springmongoreactivechat.domain.Message;
-import com.ctzn.springmongoreactivechat.repository.MessageRepository;
+import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.mongodb.core.ReactiveMongoOperations;
+import org.springframework.data.mongodb.core.query.BasicQuery;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import org.springframework.web.util.UriTemplate;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -14,10 +21,16 @@ import java.util.Map;
 @Component
 public class MessageHandler implements WebSocketHandler {
 
-    private MessageRepository messageRepository;
+    private Logger LOG = LoggerFactory.getLogger(MessageHandler.class);
 
-    public MessageHandler(MessageRepository messageRepository) {
-        this.messageRepository = messageRepository;
+    private ReactiveMongoOperations mongo;
+    private ChatBrokerService chatBroker;
+    private DomainMapper mapper;
+
+    public MessageHandler(ReactiveMongoOperations mongo, ChatBrokerService chatBroker, DomainMapper mapper) {
+        this.mongo = mongo;
+        this.chatBroker = chatBroker;
+        this.mapper = mapper;
     }
 
     private static String getPathParam(WebSocketSession webSocketSession, String uriTemplate, String key) {
@@ -29,8 +42,24 @@ public class MessageHandler implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        return session.send(messageRepository.findAllMessages().map(Message::asJson).map(session::textMessage))
-                .and(session.receive().map(WebSocketMessage::getPayloadAsText)
-                        .flatMap(x -> messageRepository.save(new Message("msg", "Guest", x))));
+        if (chatBroker.addClient(session)) {
+            String sessionId = session.getId();
+
+            Flux<WebSocketMessage> messageUpdates = mongo.tail(new BasicQuery("{}"), Message.class)
+                    .map(mapper::asJson)
+                    .doOnNext(json -> LOG.trace("==>[{}] {}", sessionId, json))
+                    .map(session::textMessage);
+
+            Flux<Message> incomingMessages = session.receive()
+                    .map(WebSocketMessage::getPayloadAsText)
+                    .doOnNext(rawText -> LOG.info("<--[{}] {}", sessionId, rawText))
+                    .map(rawText -> mapper.fromJson(rawText, IncomingMessage.class))
+                    .map(message -> Message.newInstance(session, message))
+                    .flatMap(mongo::save)
+                    .doFinally(sig -> chatBroker.removeClient(session));
+
+            return session.send(messageUpdates).and(incomingMessages);
+        }
+        return Mono.empty();
     }
 }

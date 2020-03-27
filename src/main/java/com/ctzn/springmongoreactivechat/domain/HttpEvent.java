@@ -11,13 +11,13 @@ import java.util.Date;
 
 @Data
 @Document
-@TypeAlias("httpEvent")
+@TypeAlias("httpEvents")
 public class HttpEvent {
     @Id
     private String id;
-    private Date timestamp = new Date();
     private String remoteHost;
     private int remotePort;
+    private Date timestamp = new Date();
     private String userAgent;
 
     static public HttpEvent fromServerHttpRequest(ServerHttpRequest request) {

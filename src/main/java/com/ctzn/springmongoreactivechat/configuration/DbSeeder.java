@@ -1,42 +1,35 @@
 package com.ctzn.springmongoreactivechat.configuration;
 
 import com.ctzn.springmongoreactivechat.domain.Message;
-import com.ctzn.springmongoreactivechat.domain.User;
-import com.ctzn.springmongoreactivechat.repository.MessageRepository;
-import com.ctzn.springmongoreactivechat.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.CollectionOptions;
-import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
+import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import reactor.core.publisher.Mono;
 
 @Configuration
 public class DbSeeder {
 
-    private UserRepository userRepository;
-    private MessageRepository messageRepository;
-    private ReactiveMongoTemplate template;
+    private ReactiveMongoOperations mongo;
 
-    public DbSeeder(UserRepository userRepository, MessageRepository messageRepository, ReactiveMongoTemplate template) {
-        this.userRepository = userRepository;
-        this.messageRepository = messageRepository;
-        this.template = template;
+    public DbSeeder(ReactiveMongoOperations mongo) {
+        this.mongo = mongo;
+    }
+
+    private <T> Mono<Void> dropIfExists(Class<T> clazz) {
+        return mongo.collectionExists(clazz)
+                .flatMap(e -> e ? mongo.dropCollection(clazz) : Mono.empty());
     }
 
     @Bean
     CommandLineRunner startup() {
-        return a -> {
+        return args -> {
             CollectionOptions options = CollectionOptions.empty().capped().size(1024 * 1024).maxDocuments(100);
-            template.collectionExists(Message.class)
-                    .flatMap(e -> e ? template.dropCollection(Message.class) : Mono.empty())
-                    .switchIfEmpty(template.createCollection(Message.class, options).then())
-                    .switchIfEmpty(messageRepository.save(new Message("info","Server","Service started")).then())
-                    .subscribe();
 
-            userRepository.deleteAll().doOnSuccess(
-                    v -> userRepository.save(new User("TestUser")).doOnNext(System.out::println).subscribe()
-            ).subscribe();
+            dropIfExists(Message.class)
+                    .switchIfEmpty(mongo.createCollection(Message.class, options).then())
+                    .switchIfEmpty(mongo.save(Message.newInfo("Service started")).then()).block();
         };
     }
 }

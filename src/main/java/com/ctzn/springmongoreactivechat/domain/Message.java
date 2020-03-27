@@ -1,13 +1,12 @@
 package com.ctzn.springmongoreactivechat.domain;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.web.reactive.socket.WebSocketSession;
 
 import java.util.Date;
 
@@ -19,6 +18,10 @@ public class Message {
     @Id
     private String id;
     @NonNull
+    private String sessionId;
+    @NonNull
+    private String clientId;
+    @NonNull
     private String type;
     @NonNull
     private String author;
@@ -26,14 +29,11 @@ public class Message {
     private String text;
     private Date timestamp = new Date();
 
-    private static final ObjectMapper json = new ObjectMapper();
-
-    public String asJson() {
-        try {
-            return json.writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            return "{}";
-        }
+    public static Message newInfo(String message) {
+        return new Message("", "", "info", "", message);
     }
 
+    public static Message newInstance(WebSocketSession session, IncomingMessage message) {
+        return new Message(session.getId(), message.getClientId(), "msg", session.getId(), message.getMessageText());
+    }
 }

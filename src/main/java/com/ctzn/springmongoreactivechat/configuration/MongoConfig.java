@@ -5,10 +5,9 @@ import com.mongodb.reactivestreams.client.MongoClients;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.config.AbstractReactiveMongoConfiguration;
-import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
 
 @Configuration
-@EnableReactiveMongoRepositories("com.ctzn.springmongoreactivechat.repository")
+//@EnableReactiveMongoRepositories("com.ctzn.springmongoreactivechat.repository")
 class MongoConfig extends AbstractReactiveMongoConfiguration {
 
     @Value("${spring.data.mongodb.host}")
@@ -33,7 +32,7 @@ class MongoConfig extends AbstractReactiveMongoConfiguration {
 
     @Override
     public MongoClient reactiveMongoClient() {
-        String uri = String.format("mongodb://%s:%s@%s:%s", username, password, host, port);
+        String uri = String.format("mongodb://%s:%s@%s:%s/?retryWrites=false", username, password, host, port);
         return MongoClients.create(uri);
     }
 }
