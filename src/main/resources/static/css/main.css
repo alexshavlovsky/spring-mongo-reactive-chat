@@ -3,6 +3,27 @@ html, body {
     background: #eee;
 }
 
+ul {
+    padding-left: 10px;
+    list-style-type: none;
+}
+
+#users-list-container {
+    width: 140px;
+    height: 50vh;
+    min-height: 70px;
+    max-height: 280px;
+    position: fixed;
+    top: -1px;
+    right: -1px;
+    z-index: 2;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    background-color: rgba(255, 255, 255, .6);
+    border: solid 1px gray;
+    border-radius: 0 0 0 10px;
+}
+
 #console-container {
     width: 100%;
     position: fixed;

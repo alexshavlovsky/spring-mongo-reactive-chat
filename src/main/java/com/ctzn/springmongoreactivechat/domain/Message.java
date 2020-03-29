@@ -1,5 +1,6 @@
 package com.ctzn.springmongoreactivechat.domain;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -14,26 +15,29 @@ import java.util.Date;
 @RequiredArgsConstructor
 @Document
 @TypeAlias("messages")
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class Message {
     @Id
     private String id;
     @NonNull
     private String sessionId;
     @NonNull
-    private String clientId;
+    private String remoteClientId;
     @NonNull
     private String type;
     @NonNull
-    private String author;
-    @NonNull
-    private String text;
+    private String payload;
     private Date timestamp = new Date();
 
     public static Message newInfo(String message) {
-        return new Message("", "", "info", "", message);
+        return new Message("", "", "info", message);
     }
 
-    public static Message newInstance(WebSocketSession session, IncomingMessage message) {
-        return new Message(session.getId(), message.getClientId(), "msg", session.getId(), message.getMessageText());
+    public static Message newText(WebSocketSession session, IncomingMessage message) {
+        return new Message(session.getId(), message.getRemoteClientId(), "msg", message.getMessageText());
+    }
+
+    public static Message newObject(String type, String payload) {
+        return new Message("", "", type, payload);
     }
 }

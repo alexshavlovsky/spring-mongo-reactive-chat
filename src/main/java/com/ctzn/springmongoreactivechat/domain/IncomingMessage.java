@@ -4,7 +4,6 @@ import lombok.Data;
 
 @Data
 public class IncomingMessage {
-    String clientId;
-    String clientName;
+    String remoteClientId;
     String messageText;
 }

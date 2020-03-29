@@ -38,9 +38,15 @@ function wsDispatcher(event) {
         json.ago = (Date.now() - time) / 1000;
         json.time = ("0" + time.getHours()).slice(-2) + ":" + ("0" + time.getMinutes()).slice(-2) + ":" + ("0" + time.getSeconds()).slice(-2);
         console.log(json);
-        if (json.type === 'info') adaptInfo(json.time + ' ' + json.text);
-        if (json.type === 'error') adaptError(json.time + ' ' + json.text);
-        if (json.type === 'msg') adaptMsg(json);
+        if (json.type === 'users') {
+            users_list.clear();
+            let clients = JSON.parse(json.payload);
+            clients.forEach(c => users_list.set(c.sessionId, c.sessionId));
+            refreshUsersList();
+        }
+        if (json.type === 'info') adaptInfo(json.time + ' ' + json.payload);
+        if (json.type === 'error') adaptError(json.time + ' ' + json.payload);
+        if (json.type === 'msg') adaptMsg(json.dir, json.time, json.ago, json.sessionId, json.payload);
         return;
     } catch (e) {
         adaptError('Error while parsing backend message: ' + e);
@@ -64,7 +70,7 @@ function sendOnEnter(event) {
 
 function send() {
     if (elInput.value === "") return;
-    wsClient.send(JSON.stringify({clientId: CLIENT_ID, messageText: elInput.value}));
+    wsClient.send(JSON.stringify({remoteClientId: CLIENT_ID, messageText: elInput.value}));
     elInput.value = "";
 }
 
@@ -84,18 +90,18 @@ function adaptInfo(s) {
     appendToConsole(el);
 }
 
-function adaptMsg(ev) {
+function adaptMsg(dir, time, ago, author, text) {
     let el = document.createElement('p');
-    ev.dir = ">";
-    el.classList.add('msg', 'shad', ev.dir === '<' ? 'msg-inc' : 'msg-out');
-    if (ev.ago < 10) el.classList.add(ev.dir === '<' ? 'scale-in-bl' : 'scale-in-br');
-    el.innerHTML = ev.text;
+    dir = ">";
+    el.classList.add('msg', 'shad', dir === '<' ? 'msg-inc' : 'msg-out');
+    if (ago < 10) el.classList.add(dir === '<' ? 'scale-in-bl' : 'scale-in-br');
+    el.innerHTML = text;
     appendToConsole(el);
 
     el = document.createElement('p');
-    el.classList.add('fs-80', ev.dir === '<' ? 'text-left' : 'text-right');
-    if (ev.dir === '>') el.innerHTML = ev.time + '<span class="ml-2 font-weight-bold">' + ev.author + '</span>';
-    else el.innerHTML = '<span class="mr-2 font-weight-bold">' + ev.author + '</span>' + ev.time;
+    el.classList.add('fs-80', dir === '<' ? 'text-left' : 'text-right');
+    if (dir === '>') el.innerHTML = time + '<span class="ml-2 font-weight-bold">' + author + '</span>';
+    else el.innerHTML = '<span class="mr-2 font-weight-bold">' + author + '</span>' + time;
     appendToConsole(el);
 }
 
@@ -112,5 +118,31 @@ function appendToConsole(el) {
 function clearConsole() {
     while (elConsole.firstChild) {
         elConsole.removeChild(elConsole.firstChild);
+    }
+}
+
+// users list
+
+let users_list = new Map();
+
+function refreshUsersList() {
+    clearUsersList();
+    users_list.forEach(v => {
+        let el = document.createElement('li');
+        el.innerHTML = v;
+        appendToUsersList(el);
+    });
+}
+
+const elUsersList = document.getElementById("users-list");
+
+function appendToUsersList(el) {
+    elUsersList.appendChild(el);
+}
+
+function clearUsersList() {
+    console.log(elUsersList);
+    while (elUsersList.firstChild) {
+        elUsersList.removeChild(elUsersList.firstChild);
     }
 }

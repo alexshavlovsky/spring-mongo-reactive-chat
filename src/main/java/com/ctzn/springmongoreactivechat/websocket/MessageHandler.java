@@ -45,7 +45,10 @@ public class MessageHandler implements WebSocketHandler {
         if (chatBroker.addClient(session)) {
             String sessionId = session.getId();
 
-            Flux<WebSocketMessage> messageUpdates = mongo.tail(new BasicQuery("{}"), Message.class)
+            Mono<Message> clientsList = Mono.just(Message.newObject("users", mapper.asJson(chatBroker.getClientsList())));
+
+            Flux<WebSocketMessage> messageUpdates = clientsList
+                    .concatWith(mongo.tail(new BasicQuery("{}"), Message.class))
                     .map(mapper::asJson)
                     .doOnNext(json -> LOG.trace("==>[{}] {}", sessionId, json))
                     .map(session::textMessage);
@@ -54,7 +57,7 @@ public class MessageHandler implements WebSocketHandler {
                     .map(WebSocketMessage::getPayloadAsText)
                     .doOnNext(rawText -> LOG.info("<--[{}] {}", sessionId, rawText))
                     .map(rawText -> mapper.fromJson(rawText, IncomingMessage.class))
-                    .map(message -> Message.newInstance(session, message))
+                    .map(message -> Message.newText(session, message))
                     .flatMap(mongo::save)
                     .doFinally(sig -> chatBroker.removeClient(session));
 
