@@ -42,27 +42,23 @@ public class MessageHandler implements WebSocketHandler {
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        if (chatBroker.addClient(session)) {
-            String sessionId = session.getId();
+        String sessionId = session.getId();
 
-            Mono<Message> clientsList = Mono.just(Message.newObject("users", mapper.asJson(chatBroker.getClientsList())));
+        Flux<WebSocketMessage> messageUpdates = chatBroker.addClient(session)
+                .concatWith(chatBroker.getBroadcastTopic().mergeWith(mongo.tail(new BasicQuery("{}"), Message.class)))
+                .map(mapper::asJson)
+                .doOnNext(json -> LOG.trace("==>[{}] {}", sessionId, json))
+                .map(session::textMessage);
 
-            Flux<WebSocketMessage> messageUpdates = clientsList
-                    .concatWith(mongo.tail(new BasicQuery("{}"), Message.class))
-                    .map(mapper::asJson)
-                    .doOnNext(json -> LOG.trace("==>[{}] {}", sessionId, json))
-                    .map(session::textMessage);
+        Flux<Message> incomingMessages = session.receive()
+                .map(WebSocketMessage::getPayloadAsText)
+                .doOnNext(rawText -> LOG.info("<--[{}] {}", sessionId, rawText))
+                .map(rawText -> mapper.fromJson(rawText, IncomingMessage.class))
+                .map(message -> Message.newText(session, message))
+                .flatMap(mongo::save)
+                .doFinally(sig -> chatBroker.removeClient(session));
 
-            Flux<Message> incomingMessages = session.receive()
-                    .map(WebSocketMessage::getPayloadAsText)
-                    .doOnNext(rawText -> LOG.info("<--[{}] {}", sessionId, rawText))
-                    .map(rawText -> mapper.fromJson(rawText, IncomingMessage.class))
-                    .map(message -> Message.newText(session, message))
-                    .flatMap(mongo::save)
-                    .doFinally(sig -> chatBroker.removeClient(session));
-
-            return session.send(messageUpdates).and(incomingMessages);
-        }
-        return Mono.empty();
+        return session.send(messageUpdates).and(incomingMessages);
     }
+
 }

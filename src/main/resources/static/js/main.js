@@ -15,6 +15,7 @@ const wsBaseUrl = (l = window.location) => ((l.protocol === "https:") ? "wss://"
 const WS_API_URL = wsBaseUrl() + '/ws/';
 
 let wsClient;
+let snapshot;
 
 function ws_init() {
     wsClient = new WebSocket(WS_API_URL);
@@ -38,15 +39,24 @@ function wsDispatcher(event) {
         json.ago = (Date.now() - time) / 1000;
         json.time = ("0" + time.getHours()).slice(-2) + ":" + ("0" + time.getMinutes()).slice(-2) + ":" + ("0" + time.getSeconds()).slice(-2);
         console.log(json);
-        if (json.type === 'users') {
+        if (json.type === 'snapshot') {
+            snapshot = JSON.parse(json.payload);
             users_list.clear();
-            let clients = JSON.parse(json.payload);
-            clients.forEach(c => users_list.set(c.sessionId, c.sessionId));
-            refreshUsersList();
+            snapshot.users.forEach(c => users_list.set(c.sessionId, c.sessionId));
+            redrawUsersList();
+        }
+        if (json.type === 'snapshotUpdate') {
+            let update = JSON.parse(json.payload);
+            if (update.snapshotVer >= snapshot.snapshotVer) {
+                let user = update.user;
+                if (update.type === 'addUser') users_list.set(user.sessionId, user.sessionId);
+                if (update.type === 'removeUser') users_list.delete(user.sessionId);
+                redrawUsersList();
+            }
         }
         if (json.type === 'info') adaptInfo(json.time + ' ' + json.payload);
         if (json.type === 'error') adaptError(json.time + ' ' + json.payload);
-        if (json.type === 'msg') adaptMsg(json.dir, json.time, json.ago, json.sessionId, json.payload);
+        if (json.type === 'msg') adaptMsg(snapshot.thisUser.sessionId !== json.sessionId, json.time, json.ago, json.sessionId, json.payload);
         return;
     } catch (e) {
         adaptError('Error while parsing backend message: ' + e);
@@ -90,18 +100,17 @@ function adaptInfo(s) {
     appendToConsole(el);
 }
 
-function adaptMsg(dir, time, ago, author, text) {
+function adaptMsg(incoming, time, ago, author, text) {
     let el = document.createElement('p');
-    dir = ">";
-    el.classList.add('msg', 'shad', dir === '<' ? 'msg-inc' : 'msg-out');
-    if (ago < 10) el.classList.add(dir === '<' ? 'scale-in-bl' : 'scale-in-br');
+    el.classList.add('msg', 'shad', incoming ? 'msg-inc' : 'msg-out');
+    if (ago < 10) el.classList.add(incoming ? 'scale-in-bl' : 'scale-in-br');
     el.innerHTML = text;
     appendToConsole(el);
 
     el = document.createElement('p');
-    el.classList.add('fs-80', dir === '<' ? 'text-left' : 'text-right');
-    if (dir === '>') el.innerHTML = time + '<span class="ml-2 font-weight-bold">' + author + '</span>';
-    else el.innerHTML = '<span class="mr-2 font-weight-bold">' + author + '</span>' + time;
+    el.classList.add('fs-80', incoming ? 'text-left' : 'text-right');
+    if (incoming) el.innerHTML = '<span class="mr-2 font-weight-bold">' + author + '</span>' + time;
+    else el.innerHTML = time + '<span class="ml-2 font-weight-bold">' + author + '</span>';
     appendToConsole(el);
 }
 
@@ -125,7 +134,7 @@ function clearConsole() {
 
 let users_list = new Map();
 
-function refreshUsersList() {
+function redrawUsersList() {
     clearUsersList();
     users_list.forEach(v => {
         let el = document.createElement('li');
@@ -141,7 +150,6 @@ function appendToUsersList(el) {
 }
 
 function clearUsersList() {
-    console.log(elUsersList);
     while (elUsersList.firstChild) {
         elUsersList.removeChild(elUsersList.firstChild);
     }
