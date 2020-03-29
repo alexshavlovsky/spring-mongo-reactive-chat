@@ -2,6 +2,13 @@
 
 Pure Reactive WebFlux MongoDB WebSocket Chat. The chat is built on top of MongoDB's API: Capped collections, Tailable cursors, ReactiveMongoOperations template.
 
+## Screenshots
+
+<p align="center">
+  <img src="screenshots/1_client_1.png?raw=true" width="360"/>
+  <img src="screenshots/2_client_2.png?raw=true" width="360"/>  
+</p>
+
 ## Build and run instructions
 
 ```
