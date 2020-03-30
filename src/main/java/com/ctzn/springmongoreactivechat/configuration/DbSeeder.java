@@ -9,6 +9,8 @@ import org.springframework.data.mongodb.core.CollectionOptions;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+
 @Configuration
 public class DbSeeder {
 
@@ -21,11 +23,21 @@ public class DbSeeder {
     @Value("${chat_history_drop_on_startup}")
     boolean doDropHistory;
 
+    @Value("${shutdown_on_db_connection_error}")
+    boolean doShutdownOnDbConnectionError;
 
     private ReactiveMongoOperations mongo;
 
     public DbSeeder(ReactiveMongoOperations mongo) {
         this.mongo = mongo;
+    }
+
+    private Mono<Boolean> isMongoConnected() {
+        return mongo.executeCommand("{ serverStatus: 1 }")
+                .map(d -> true)
+                .timeout(Duration.ofSeconds(3), Mono.just(false))
+                .onErrorReturn(false)
+                .defaultIfEmpty(false);
     }
 
     private <T> Mono<Void> dropIfExists(Class<T> clazz) {
@@ -38,10 +50,14 @@ public class DbSeeder {
                 .flatMap(e -> e ? Mono.empty() : mongo.createCollection(Message.class, options).then());
     }
 
-
     @Bean
     CommandLineRunner startup() {
         return args -> {
+            if (doShutdownOnDbConnectionError) {
+                Boolean connected = isMongoConnected().block();
+                if (connected == null || !connected) throw new Error("Failed to connect to MongoDB");
+            }
+
             CollectionOptions options = CollectionOptions.empty().capped().size(maxSize).maxDocuments(maxDoc);
 
             Mono.just(doDropHistory)
