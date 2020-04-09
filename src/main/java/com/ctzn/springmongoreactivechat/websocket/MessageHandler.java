@@ -33,7 +33,7 @@ public class MessageHandler implements WebSocketHandler {
     public Mono<Void> handle(WebSocketSession session) {
         String sessionId = session.getId();
 
-        Flux<WebSocketMessage> messageUpdates = chatBroker.addClient(session)
+        Flux<WebSocketMessage> outgoingMessages = chatBroker.addClient(sessionId)
                 .concatWith(chatBroker.getBroadcastTopic().mergeWith(broadcastMessageService.getTopic()))
                 .map(mapper::asJson)
                 .doOnNext(json -> LOG.trace("==>[{}] {}", sessionId, json))
@@ -43,11 +43,15 @@ public class MessageHandler implements WebSocketHandler {
                 .map(WebSocketMessage::getPayloadAsText)
                 .doOnNext(rawText -> LOG.info("<--[{}] {}", sessionId, rawText))
                 .map(rawText -> mapper.fromJson(rawText, IncomingMessage.class))
+                .doOnNext(message -> {
+                    if ("updateMe".equals(message.getType())) chatBroker.updateClient(sessionId, message);
+                })
+                .filter(message -> "msg".equals(message.getType()))
                 .map(message -> Message.newText(session, message))
                 .flatMap(broadcastMessageService::saveMessage)
-                .doFinally(sig -> chatBroker.removeClient(session));
+                .doFinally(sig -> chatBroker.removeClient(sessionId));
 
-        return session.send(messageUpdates).and(incomingMessages);
+        return session.send(outgoingMessages).and(incomingMessages);
     }
 
 }

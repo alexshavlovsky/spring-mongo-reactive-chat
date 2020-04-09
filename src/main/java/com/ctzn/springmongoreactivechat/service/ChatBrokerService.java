@@ -4,14 +4,13 @@ import com.ctzn.springmongoreactivechat.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class ChatBrokerService {
@@ -20,7 +19,7 @@ public class ChatBrokerService {
 
     private ReplayProcessor<Message> broadcastTopic = ReplayProcessor.create(10);
 
-    private Map<String, WebSocketSession> sessions = new HashMap<>();
+    private Map<String, ChatClient> clients = new HashMap<>();
     private int snapshotVersion = 0;
 
     private DomainMapper mapper;
@@ -29,12 +28,12 @@ public class ChatBrokerService {
         this.mapper = mapper;
     }
 
-    synchronized public Mono<Message> addClient(WebSocketSession session) {
-        ChatClient thisClient = ChatClient.fromSession(session);
+    synchronized public Mono<Message> addClient(String sessionId) {
+        ChatClient thisClient = ChatClient.newInstance(sessionId);
         ChatSnapshot snapshot = new ChatSnapshot(++snapshotVersion, getClientsList(), thisClient);
 
-        sessions.put(session.getId(), session);
-        LOG.info(" + [{}] (total clients: {})", session.getId(), sessions.size());
+        clients.put(sessionId, thisClient);
+        LOG.info(" + [{}] (total clients: {})", sessionId, clients.size());
 
         broadcastTopic.onNext(
                 Message.newObject("snapshotUpdate", mapper.asJson(
@@ -43,20 +42,28 @@ public class ChatBrokerService {
         return Mono.just(Message.newObject("snapshot", mapper.asJson(snapshot)));
     }
 
-    synchronized public void removeClient(WebSocketSession session) {
-        sessions.remove(session.getId());
-        LOG.info(" x [{}] (total clients: {})", session.getId(), sessions.size());
-        ChatClient thisClient = ChatClient.fromSession(session);
+    synchronized public void removeClient(String sessionId) {
+        ChatClient thisClient = clients.get(sessionId);
+        clients.remove(sessionId);
+        LOG.info(" x [{}] (total clients: {})", sessionId, clients.size());
         broadcastTopic.onNext(
                 Message.newObject("snapshotUpdate", mapper.asJson(
                         new ChatSnapshotUpdate(snapshotVersion, "removeUser", thisClient)))
         );
     }
 
+    synchronized public void updateClient(String sessionId, IncomingMessage message) {
+        ChatClient thisClient = clients.get(sessionId);
+        thisClient.setClientId(message.getClientId());
+        thisClient.setNick(message.getPayload());
+        broadcastTopic.onNext(
+                Message.newObject("snapshotUpdate", mapper.asJson(
+                        new ChatSnapshotUpdate(snapshotVersion, "updateUser", thisClient)))
+        );
+    }
+
     private List<ChatClient> getClientsList() {
-        return sessions.values().stream()
-                .map(ChatClient::fromSession)
-                .collect(Collectors.toList());
+        return new ArrayList<>(clients.values());
     }
 
     public ReplayProcessor<Message> getBroadcastTopic() {

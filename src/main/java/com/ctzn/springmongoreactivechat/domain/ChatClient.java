@@ -3,15 +3,16 @@ package com.ctzn.springmongoreactivechat.domain;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.reactive.socket.WebSocketSession;
 
 @Data
 @RequiredArgsConstructor
 public class ChatClient {
     @NonNull
     String sessionId;
+    String clientId;
+    String nick;
 
-    public static ChatClient fromSession(WebSocketSession session) {
-        return new ChatClient(session.getId());
+    public static ChatClient newInstance(String sessionId) {
+        return new ChatClient(sessionId);
     }
 }

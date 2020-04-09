@@ -16,12 +16,15 @@ const WS_API_URL = wsBaseUrl() + '/ws/';
 
 let wsClient;
 let snapshot;
+let frameID = 0;
 
 function ws_init() {
     wsClient = new WebSocket(WS_API_URL);
     wsClient.onopen = () => {
         clearConsole();
+        frameID = 0;
         adaptInfo('The ws connection is open');
+        wsClient.send(JSON.stringify({frameId: frameID++, type: 'updateMe', clientId: CLIENT_ID,}));
     };
     wsClient.onerror = () => {
     };
@@ -56,7 +59,7 @@ function wsDispatcher(event) {
         }
         if (json.type === 'info') adaptInfo(json.time + ' ' + json.payload);
         if (json.type === 'error') adaptError(json.time + ' ' + json.payload);
-        if (json.type === 'msg') adaptMsg(snapshot.thisUser.sessionId !== json.sessionId, json.time, json.ago, json.sessionId, json.payload);
+        if (json.type === 'msg') adaptMsg(CLIENT_ID !== json.clientId, json.time, json.ago, json.sessionId, json.payload);
         return;
     } catch (e) {
         adaptError('Error while parsing backend message: ' + e);
@@ -80,7 +83,12 @@ function sendOnEnter(event) {
 
 function send() {
     if (elInput.value === "") return;
-    wsClient.send(JSON.stringify({remoteClientId: CLIENT_ID, messageText: elInput.value}));
+    wsClient.send(JSON.stringify({
+        frameId: frameID++,
+        type: 'msg',
+        clientId: CLIENT_ID,
+        payload: elInput.value
+    }));
     elInput.value = "";
 }
 

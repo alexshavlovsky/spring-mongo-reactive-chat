@@ -4,6 +4,9 @@ import lombok.Data;
 
 @Data
 public class IncomingMessage {
-    String remoteClientId;
-    String messageText;
+    int frameId;
+    String clientId;
+    String userNick;
+    String type;
+    String payload;
 }

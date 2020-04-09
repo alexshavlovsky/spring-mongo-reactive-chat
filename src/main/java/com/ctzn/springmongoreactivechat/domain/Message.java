@@ -22,7 +22,9 @@ public class Message {
     @NonNull
     private String sessionId;
     @NonNull
-    private String remoteClientId;
+    private String clientId;
+    @NonNull
+    private String userNick;
     @NonNull
     private String type;
     @NonNull
@@ -30,14 +32,14 @@ public class Message {
     private Date timestamp = new Date();
 
     public static Message newInfo(String message) {
-        return new Message("", "", "info", message);
+        return new Message("", "", "", "info", message);
     }
 
     public static Message newText(WebSocketSession session, IncomingMessage message) {
-        return new Message(session.getId(), message.getRemoteClientId(), "msg", message.getMessageText());
+        return new Message(session.getId(), message.getClientId(), message.getUserNick() == null ? "" : message.getUserNick(), "msg", message.getPayload());
     }
 
     public static Message newObject(String type, String payload) {
-        return new Message("", "", type, payload);
+        return new Message("", "", "", type, payload);
     }
 }
