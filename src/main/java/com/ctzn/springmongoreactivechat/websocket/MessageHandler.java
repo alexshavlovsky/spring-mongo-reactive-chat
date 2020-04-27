@@ -46,7 +46,7 @@ public class MessageHandler implements WebSocketHandler {
                 .doOnNext(message -> {
                     if ("updateMe".equals(message.getType())) chatBroker.updateClient(sessionId, message);
                 })
-                .filter(message -> "msg".equals(message.getType()))
+                .filter(message -> "msg".equals(message.getType()) || "richMsg".equals(message.getType()))
                 .map(message -> Message.newText(session, message))
                 .flatMap(broadcastMessageService::saveMessage)
                 .doFinally(sig -> chatBroker.removeClient(sessionId));
