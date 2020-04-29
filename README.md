@@ -4,7 +4,7 @@ Pure Reactive WebFlux MongoDB WebSocket Chat. The chat is built on top of MongoD
 
 Prebuilt Bootstrap client is included and served by SpringBoot at `http://localhost:8080`
 
-Angular PrimeNG frontend client which supports nick names can be found here:
+Angular PrimeNG frontend client which supports nick names and file attachments can be found here:
 <br>
 [Angular 9 PrimeNg chat client](https://github.com/alexshavlovsky/primeng-chat-client.git).
 
