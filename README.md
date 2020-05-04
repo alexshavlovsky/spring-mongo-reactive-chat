@@ -1,10 +1,10 @@
 # SpringBoot WebFlux MongoDB WebSocket Reactive Chat
 
-Pure Reactive WebFlux MongoDB WebSocket Chat. The chat is built on top of MongoDB's API: Capped collections, Tailable cursors, ReactiveMongoOperations template.
+Pure Reactive WebFlux MongoDB WebSocket Chat. The chat is built on top of MongoDB's API: Capped collections, Tailable cursors, ReactiveMongoOperations template, GridFS template.
 
-Prebuilt Bootstrap client is included and served by SpringBoot at `http://localhost:8080`
+A prebuilt limited-functionality Bootstrap client is included and served by SpringBoot at `http://localhost:8080`
 
-Angular PrimeNG frontend client which supports nick names and file attachments can be found here:
+The full-featured Angular PrimeNG frontend client which supports nick names and file attachments can be found here:
 <br>
 [Angular 9 PrimeNg chat client](https://github.com/alexshavlovsky/primeng-chat-client.git).
 
@@ -27,10 +27,10 @@ dcker run --name test-mongo -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoad
 3. Build and run the Spring Boot application. Open the URL in a browser:
 localhost:8080
 ```
-### In-memory setup (no MongoDB)
+### No-Mongo setup (in-memory chat, file-system attachments storage)
 ```
 1. In the application.properties set:
-spring.profiles.active=replay-service
+spring.profiles.active=replay-service, file-system-attachments
  
 2. Build and run the Spring Boot application. Open the URL in a browser:
 localhost:8080
@@ -43,3 +43,4 @@ Backend engine                 | Spring Boot WebFlux
 Database                       | Reactive MongoDB
 Protocol                       | Reactive WebSockets
 Frontend engine                | Pure JS + WebSockets + Bootstrap
+or (see description)           | Angular 9 + PrimeNG
