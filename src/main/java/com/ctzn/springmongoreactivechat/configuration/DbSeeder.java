@@ -10,8 +10,6 @@ import org.springframework.data.mongodb.core.CollectionOptions;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-
 @Configuration
 @Profile("mongo-service")
 public class DbSeeder {
@@ -37,8 +35,6 @@ public class DbSeeder {
     private Mono<Boolean> isMongoConnected() {
         return mongo.executeCommand("{ serverStatus: 1 }")
                 .map(d -> true)
-                .timeout(Duration.ofSeconds(3), Mono.just(false))
-                .onErrorReturn(false)
                 .defaultIfEmpty(false);
     }
 
@@ -55,17 +51,18 @@ public class DbSeeder {
     @Bean
     CommandLineRunner startup() {
         return args -> {
-            if (doShutdownOnDbConnectionError) {
+            try {
                 Boolean connected = isMongoConnected().block();
-                if (connected == null || !connected) throw new Error("Failed to connect to MongoDB");
+                if (connected != null && connected) {
+                    CollectionOptions options = CollectionOptions.empty().capped().size(maxSize).maxDocuments(maxDoc);
+                    Mono.just(doDropHistory)
+                            .flatMap(d -> d ? dropIfExists(Message.class) : Mono.empty())
+                            .switchIfEmpty(createIfAbsents(Message.class, options))
+                            .switchIfEmpty(mongo.save(Message.newInfo("Service started")).then()).block();
+                }
+            } catch (Exception e) {
+                if (doShutdownOnDbConnectionError) throw new Error(e.getCause());
             }
-
-            CollectionOptions options = CollectionOptions.empty().capped().size(maxSize).maxDocuments(maxDoc);
-
-            Mono.just(doDropHistory)
-                    .flatMap(d -> d ? dropIfExists(Message.class) : Mono.empty())
-                    .switchIfEmpty(createIfAbsents(Message.class, options))
-                    .switchIfEmpty(mongo.save(Message.newInfo("Service started")).then()).block();
         };
     }
 }

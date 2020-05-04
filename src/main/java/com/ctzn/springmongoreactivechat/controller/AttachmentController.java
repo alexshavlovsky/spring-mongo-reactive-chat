@@ -29,6 +29,6 @@ public class AttachmentController {
     @PostMapping(consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public Mono<Void> getFileById(ServerWebExchange exchange) {
         exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        return attachmentService.getFileById(exchange);
+        return attachmentService.loadAttachmentById(exchange);
     }
 }

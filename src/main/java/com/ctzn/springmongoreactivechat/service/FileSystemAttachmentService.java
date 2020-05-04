@@ -17,16 +17,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
-import static com.ctzn.springmongoreactivechat.service.HttpUtil.getRemoteHost;
 import static com.ctzn.springmongoreactivechat.service.HttpUtil.newHttpError;
 
 @Service
 @Profile("file-system-attachments")
-public class FileSystemAttachmentService implements AttachmentService {
+public class FileSystemAttachmentService extends AttachmentService {
 
     private Logger LOG = LoggerFactory.getLogger(FileSystemAttachmentService.class);
 
@@ -43,24 +41,21 @@ public class FileSystemAttachmentService implements AttachmentService {
         }
     }
 
-    private Function<Flux<FilePart>, Publisher<String>> saveFiles = parts -> parts.flatMap(part -> {
-        String fileId = UUID.randomUUID().toString();
-        return part.transferTo(uploadPath.resolve(fileId)).then(Mono.just(fileId));
-    });
-
     @Override
-    public Mono<List<String>> saveAttachments(Flux<FilePart> parts, ServerWebExchange exchange) {
-        return HttpUtil.savePartsAndCollectIds(LOG, parts, exchange, saveFiles);
+    Function<Flux<FilePart>, Publisher<String>> saveAttachmentsHandler() {
+        return parts -> parts.flatMap(part -> {
+            String fileId = UUID.randomUUID().toString();
+            return part.transferTo(uploadPath.resolve(fileId)).then(Mono.just(fileId));
+        });
     }
 
     @Override
-    public Mono<Void> getFileById(ServerWebExchange exchange) {
-        return HttpUtil.formDataParseFileId(exchange, LOG).flatMap(fileId -> {
-            File file = uploadPath.resolve((String) fileId).toFile();
-            if (!file.exists()) return newHttpError(LOG, exchange, HttpStatus.NOT_FOUND,
-                    "File does not exist: " + fileId);
-            return ((ZeroCopyHttpOutputMessage) exchange.getResponse()).writeWith(file, 0, file.length())
-                    .doOnSuccess(v -> LOG.info("f->[{}] {}", getRemoteHost(exchange), fileId));
+    Function<Mono<String>, Publisher<String>> loadAttachmentByIdHandler(ServerWebExchange exchange) {
+        return fileIdMono -> fileIdMono.flatMap(fileId -> {
+            File file = uploadPath.resolve(fileId).toFile();
+            return file.exists() ?
+                    ((ZeroCopyHttpOutputMessage) exchange.getResponse()).writeWith(file, 0, file.length()).thenReturn(fileId) :
+                    newHttpError(LOG, exchange, HttpStatus.NOT_FOUND, "File does not exist: " + fileId);
         });
     }
 }

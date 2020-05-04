@@ -42,6 +42,6 @@ class MongoConfig extends AbstractReactiveMongoConfiguration {
 
     @Bean
     public ReactiveGridFsTemplate reactiveGridFsTemplate() throws Exception {
-        return new ReactiveGridFsTemplate(reactiveMongoDbFactory(), mappingMongoConverter());
+        return new ReactiveGridFsTemplate(reactiveMongoDbFactory(), mappingMongoConverter(), "attachments");
     }
 }
