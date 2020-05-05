@@ -47,7 +47,7 @@ public abstract class AttachmentService {
     public Mono<Void> loadAttachmentById(ServerWebExchange exchange) {
         return parseRequestParameterByKey(exchange, FORM_DATA_FILE_ID_KEY)
                 .transform(loadAttachmentByIdHandler(exchange))
-                .doOnNext(fileId -> LOG.info("f->[{}] {}", getRemoteHost(exchange), fileId))
+                .doOnNext(fileId -> LOG.info("f->[{}] {} OK", getRemoteHost(exchange), fileId))
                 .flatMap(fileId -> Mono.empty());
     }
 }
