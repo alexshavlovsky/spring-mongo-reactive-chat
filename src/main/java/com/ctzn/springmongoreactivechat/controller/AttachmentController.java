@@ -8,7 +8,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.List;
+import java.util.Map;
 
 @RestController
 @CrossOrigin
@@ -22,7 +22,7 @@ public class AttachmentController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<List<String>> process(@RequestPart("file") Flux<FilePart> parts, ServerWebExchange exchange) {
+    public Mono<Map<String, String>> process(@RequestPart("file") Flux<FilePart> parts, ServerWebExchange exchange) {
         return attachmentService.saveAttachments(parts, exchange);
     }
 

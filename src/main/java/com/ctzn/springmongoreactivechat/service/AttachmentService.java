@@ -8,8 +8,9 @@ import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
-import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static com.ctzn.springmongoreactivechat.service.HttpUtil.getRemoteHost;
@@ -31,24 +32,17 @@ public abstract class AttachmentService {
     }
 
     // saves an attachment and returns an id
-    abstract Function<Flux<FilePart>, Publisher<String>> saveAttachmentsHandler();
+    abstract Function<Flux<FilePart>, Publisher<Tuple2<String, String>>> saveAttachmentsHandler();
 
     // loads an attachment by id and returns an id
     abstract Function<Mono<String>, Publisher<String>> loadAttachmentByIdHandler(ServerWebExchange exchange);
 
     // handles all attachments and returns a list of ids
-    public Mono<List<String>> saveAttachments(Flux<FilePart> parts, ServerWebExchange exchange) {
+    public Mono<Map<String, String>> saveAttachments(Flux<FilePart> parts, ServerWebExchange exchange) {
         return parts
                 .transform(saveAttachmentsHandler())
-                .doOnNext(fileId -> LOG.info("<-f[{}] {}", getRemoteHost(exchange), fileId))
-                .collectList();
-        // TODO:
-        //  Issue: file ids do not mapped properly on frontend side
-        //  Description: incoming files may be handled in parallel so order of file ids
-        //  in resulting Flux may be inconsistent with order of file parts in the request
-        //  Solution: returned file id must be mapped with original file index
-        //  to properly map file ids on frontend side while building message with
-        //  attachments
+                .doOnNext(tuple -> LOG.info("<-f[{}] {} as {}", getRemoteHost(exchange), tuple.getT1(), tuple.getT2()))
+                .collectMap(Tuple2::getT1, Tuple2::getT2);
     }
 
     // returns a request parameter by key or an error

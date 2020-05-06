@@ -1,6 +1,5 @@
 package com.ctzn.springmongoreactivechat.service;
 
-import org.bson.types.ObjectId;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.util.function.Function;
 
@@ -47,10 +48,11 @@ public class MongoAttachmentService extends AttachmentService {
     }
 
     @Override
-    Function<Flux<FilePart>, Publisher<String>> saveAttachmentsHandler() {
-        return parts -> parts
-                .flatMap(part -> gridFsTemplate.store(part.content(), part.filename()))
-                .map(ObjectId::toHexString);
+    Function<Flux<FilePart>, Publisher<Tuple2<String, String>>> saveAttachmentsHandler() {
+        return parts -> parts.flatMap(part -> gridFsTemplate
+                .store(part.content(), part.filename())
+                .map(objectId -> Tuples.of(part.filename(), objectId.toHexString()))
+        );
     }
 
     @Override

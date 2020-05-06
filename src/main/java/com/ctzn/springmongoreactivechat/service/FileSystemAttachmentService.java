@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +33,7 @@ public class FileSystemAttachmentService extends AttachmentService {
     private Logger LOG = LoggerFactory.getLogger(FileSystemAttachmentService.class);
 
     private final String STORAGE_FOLDER_PATH = "uploaded_files";
-    private final int DATA_BUFFER_SIZE = 1024;
+    private final int DATA_BUFFER_SIZE = 64 * 1024;
     private final Path uploadPath = Paths.get(STORAGE_FOLDER_PATH);
 
     public FileSystemAttachmentService() {
@@ -63,10 +65,10 @@ public class FileSystemAttachmentService extends AttachmentService {
     }
 
     @Override
-    Function<Flux<FilePart>, Publisher<String>> saveAttachmentsHandler() {
+    Function<Flux<FilePart>, Publisher<Tuple2<String, String>>> saveAttachmentsHandler() {
         return parts -> parts.flatMap(part -> {
             String fileId = UUID.randomUUID().toString();
-            return part.transferTo(uploadPath.resolve(fileId)).then(Mono.just(fileId));
+            return part.transferTo(uploadPath.resolve(fileId)).then(Mono.just(Tuples.of(part.filename(), fileId)));
         });
     }
 
