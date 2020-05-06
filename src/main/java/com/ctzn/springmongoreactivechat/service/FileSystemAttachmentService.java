@@ -42,6 +42,24 @@ public class FileSystemAttachmentService extends AttachmentService {
                 e.printStackTrace();
             }
         }
+        logStorageStat();
+    }
+
+    @Override
+    public Mono<int[]> getStorageSize() {
+        try {
+            return Flux.fromStream(Files.list(uploadPath))
+                    .filter(p -> p.toFile().isFile())
+                    .map(p -> p.toFile().length())
+                    .reduce(new int[]{0, 0}, (a, v) -> {
+                        a[0] += v / 1048576;
+                        a[1]++;
+                        return a;
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+            return Mono.just(new int[]{0, 0});
+        }
     }
 
     @Override

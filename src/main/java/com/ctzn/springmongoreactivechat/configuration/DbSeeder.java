@@ -10,6 +10,8 @@ import org.springframework.data.mongodb.core.CollectionOptions;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import reactor.core.publisher.Mono;
 
+import static com.ctzn.springmongoreactivechat.service.MongoUtil.isMongoConnected;
+
 @Configuration
 @Profile("mongo-service")
 public class DbSeeder {
@@ -32,12 +34,6 @@ public class DbSeeder {
         this.mongo = mongo;
     }
 
-    private Mono<Boolean> isMongoConnected() {
-        return mongo.executeCommand("{ serverStatus: 1 }")
-                .map(d -> true)
-                .defaultIfEmpty(false);
-    }
-
     private <T> Mono<Void> dropIfExists(Class<T> clazz) {
         return mongo.collectionExists(clazz)
                 .flatMap(e -> e ? mongo.dropCollection(clazz) : Mono.empty());
@@ -52,14 +48,15 @@ public class DbSeeder {
     CommandLineRunner startup() {
         return args -> {
             try {
-                Boolean connected = isMongoConnected().block();
+                Boolean connected = isMongoConnected(mongo).block();
                 if (connected != null && connected) {
                     CollectionOptions options = CollectionOptions.empty().capped().size(maxSize).maxDocuments(maxDoc);
                     Mono.just(doDropHistory)
                             .flatMap(d -> d ? dropIfExists(Message.class) : Mono.empty())
                             .switchIfEmpty(createIfAbsents(Message.class, options))
                             .switchIfEmpty(mongo.save(Message.newInfo("Service started")).then()).block();
-                }
+                } else
+                    throw new RuntimeException(new Exception("Mongo is not responding. To disable this error set the property shutdown_on_db_connection_error = false"));
             } catch (Exception e) {
                 if (doShutdownOnDbConnectionError) throw new Error(e.getCause());
             }

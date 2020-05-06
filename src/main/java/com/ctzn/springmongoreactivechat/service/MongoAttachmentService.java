@@ -34,10 +34,16 @@ public class MongoAttachmentService extends AttachmentService {
     public MongoAttachmentService(ReactiveGridFsTemplate gridFsTemplate, ReactiveMongoOperations mongo) {
         this.gridFsTemplate = gridFsTemplate;
         this.mongo = mongo;
-        Mono.zip(
-                countDocuments(mongo, "attachments.chunks").map(n -> n / 4),
-                countDocuments(mongo, "attachments.files")
-        ).subscribe(tuple -> LOG.info("Total attachments: {} MB in {} files", tuple.getT1(), tuple.getT2()));
+        logStorageStat();
+    }
+
+    @Override
+    public Mono<int[]> getStorageSize() {
+        return MongoUtil.isMongoConnectedSilent(mongo).flatMap(ok ->
+                Mono.zip(
+                        countDocuments(mongo, "attachments.chunks").map(n -> n / 4),
+                        countDocuments(mongo, "attachments.files")
+                ).map(t -> t.toList().stream().mapToInt(x -> (int) x).toArray()));
     }
 
     @Override

@@ -9,11 +9,26 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
+import java.time.Duration;
 import java.util.function.Function;
 
 import static com.ctzn.springmongoreactivechat.service.HttpUtil.getRemoteHost;
 
-class MongoUtil {
+public class MongoUtil {
+    public static Mono<Boolean> isMongoConnected(ReactiveMongoOperations mongo) {
+        return mongo.executeCommand("{ serverStatus: 1 }")
+                .map(d -> true)
+                .timeout(Duration.ofSeconds(5), Mono.just(false))
+                .defaultIfEmpty(false);
+    }
+
+    // only emits 'true' if mongo is connected otherwise emits onComplete
+    static Mono<Boolean> isMongoConnectedSilent(ReactiveMongoOperations mongo) {
+        return isMongoConnected(mongo)
+                .onErrorReturn(false)
+                .filter(ok -> ok);
+    }
+
     static Mono<Integer> countDocuments(ReactiveMongoOperations mongo, String collection) {
         return mongo.executeCommand(String.format("{count:'%s'}", collection))
                 .map(x -> x.get("n"))

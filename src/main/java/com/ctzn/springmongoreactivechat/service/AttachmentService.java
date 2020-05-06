@@ -21,6 +21,15 @@ public abstract class AttachmentService {
 
     static private String FORM_DATA_FILE_ID_KEY = "fileId";
 
+    // returns an int array that contains respectively the total storage size in MB and the number of stored files
+    abstract public Mono<int[]> getStorageSize();
+
+    // logs storage statistics
+    void logStorageStat() {
+        getStorageSize().subscribe(a ->
+                LOG.info("Total attachments stored: {} MB in {} files", a[0], a[1]));
+    }
+
     // saves an attachment and returns an id
     abstract Function<Flux<FilePart>, Publisher<String>> saveAttachmentsHandler();
 
@@ -33,6 +42,13 @@ public abstract class AttachmentService {
                 .transform(saveAttachmentsHandler())
                 .doOnNext(fileId -> LOG.info("<-f[{}] {}", getRemoteHost(exchange), fileId))
                 .collectList();
+        // TODO:
+        //  Issue: file ids do not mapped properly on frontend side
+        //  Description: incoming files may be handled in parallel so order of file ids
+        //  in resulting Flux may be inconsistent with order of file parts in the request
+        //  Solution: returned file id must be mapped with original file index
+        //  to properly map file ids on frontend side while building message with
+        //  attachments
     }
 
     // returns a request parameter by key or an error
