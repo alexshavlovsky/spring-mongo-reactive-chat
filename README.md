@@ -8,6 +8,10 @@ The full-featured Angular PrimeNG frontend client which supports nick names and 
 <br>
 [Angular 9 PrimeNg chat client](https://github.com/alexshavlovsky/primeng-chat-client.git).
 
+A small Java stress testing client for this chat:
+<br>
+[Stress testing client for WebSocket chat](https://github.com/alexshavlovsky/ws-chat-test-java-client).
+
 ## Screenshots
 
 <p align="center">

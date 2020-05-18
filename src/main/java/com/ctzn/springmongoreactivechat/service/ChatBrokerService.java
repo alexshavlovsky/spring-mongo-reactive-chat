@@ -55,7 +55,7 @@ public class ChatBrokerService {
     synchronized public void updateClient(String sessionId, IncomingMessage message) {
         ChatClient thisClient = clients.get(sessionId);
         thisClient.setClientId(message.getClientId());
-        thisClient.setNick(message.getPayload());
+        thisClient.setNick(message.getUserNick());
         broadcastTopic.onNext(
                 Message.newObject("snapshotUpdate", mapper.asJson(
                         new ChatSnapshotUpdate(snapshotVersion, "updateUser", thisClient)))
