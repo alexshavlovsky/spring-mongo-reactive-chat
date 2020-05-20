@@ -31,7 +31,7 @@ public class ChatBrokerService {
     synchronized public Mono<Message> addClient(String sessionId) {
         ChatClient thisClient = ChatClient.newInstance(sessionId);
         ChatSnapshot snapshot = new ChatSnapshot(++snapshotVersion, getClientsList(), thisClient);
-
+        // TODO: do not add a client to the snapshot and ignore messages until clientId and nick are provided
         clients.put(sessionId, thisClient);
         LOG.info(" + [{}] (total clients: {})", sessionId, clients.size());
 
