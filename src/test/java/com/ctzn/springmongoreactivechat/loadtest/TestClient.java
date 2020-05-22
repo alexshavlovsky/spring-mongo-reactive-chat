@@ -13,25 +13,29 @@ import java.util.stream.Stream;
 public class TestClient extends WebSocketClient {
     static private int instanceCounter = 0;
 
-    private final List<ServerMessageTestModel> messages = new ArrayList<>();
     private final String clientId = UUID.randomUUID().toString();
     private final String nick;
+    private final boolean putOnlySnapshot;
     private final Gson gson = new Gson();
+
+    private final List<ServerMessageTestModel> messages = new ArrayList<>();
+    private final Map<String, ChatClientTestModel> chatSnapshot = new HashMap<>();
+
     private int frameId = 0;
+    private int snapshotVersion = -1;
 
     final CountDownLatch snapshotLatch = new CountDownLatch(1);
     final CountDownLatch snapshotUpdateSelfLatch = new CountDownLatch(1);
     final CountDownLatch disconnectLatch = new CountDownLatch(1);
 
-    Map<String, List<ServerMessageTestModel>> messagesMap = null;
-
-    private TestClient(URI serverUri, String nickPrefix) {
+    private TestClient(URI serverUri, String nickPrefix, boolean putOnlySnapshot) {
         super(serverUri);
         nick = nickPrefix + ("" + (1000 + ++instanceCounter)).substring(1);
+        this.putOnlySnapshot = putOnlySnapshot;
     }
 
-    static TestClient newInstance(String serverUri, String nickPrefix) {
-        return new TestClient(URI.create(serverUri), nickPrefix);
+    static TestClient newInstance(String serverUri, String nickPrefix, boolean putOnlySnapshot) {
+        return new TestClient(URI.create(serverUri), nickPrefix, putOnlySnapshot);
     }
 
     private void sendTypedMessage(String type, String payload) {
@@ -53,12 +57,29 @@ public class TestClient extends WebSocketClient {
 
     @Override
     public void onMessage(String message) {
+        if (disconnectLatch.getCount() == 0) return;
         ServerMessageTestModel msg = gson.fromJson(message, ServerMessageTestModel.class);
-        if ("snapshot".equals(msg.getType())) snapshotLatch.countDown();
+        if ("snapshot".equals(msg.getType())) {
+            ChatSnapshotTestModel snapshot = gson.fromJson(msg.getPayload(), ChatSnapshotTestModel.class);
+            snapshotVersion = snapshot.getSnapshotVer();
+            snapshot.getUsers().forEach(u -> chatSnapshot.put(u.getSessionId(), u));
+            snapshotLatch.countDown();
+        }
         if ("snapshotUpdate".equals(msg.getType())) {
             ChatSnapshotUpdateTestModel update = gson.fromJson(msg.getPayload(), ChatSnapshotUpdateTestModel.class);
-            if ("updateUser".equals(update.getType()) && nick.equals(update.getUser().getNick()))
-                snapshotUpdateSelfLatch.countDown();
+            if (update.getSnapshotVer() >= snapshotVersion) {
+                ChatClientTestModel user = update.getUser();
+                switch (update.getType()) {
+                    case "updateUser":
+                        if (nick.equals(update.getUser().getNick())) snapshotUpdateSelfLatch.countDown();
+                    case "addUser":
+                        chatSnapshot.put(user.getSessionId(), user);
+                        break;
+                    case "removeUser":
+                        if (!putOnlySnapshot) chatSnapshot.remove(user.getSessionId());
+                        break;
+                }
+            }
         }
         messages.add(msg);
     }
@@ -70,27 +91,30 @@ public class TestClient extends WebSocketClient {
 
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        publishMessagesMap();
         if (remote)
             System.out.println("Client has been disconnected from server with code: " + code + " " + reason);
+        disconnectLatch.countDown();
     }
 
     @Override
     public void onError(Exception ex) {
-        publishMessagesMap();
         System.out.println("Exception occurred ...\n" + ex);
-    }
-
-    private void publishMessagesMap() {
-        messagesMap = messages.stream()
-                .collect(HashMap::new, (m, v) -> m.merge(v.getType(), Stream.of(v).collect(Collectors.toList()), (a, n) -> {
-                    a.addAll(n);
-                    return a;
-                }), Map::putAll);
         disconnectLatch.countDown();
     }
 
     String getNick() {
         return nick;
+    }
+
+    synchronized Set<ChatClientTestModel> getChatSnapshot() {
+        return new HashSet<>(chatSnapshot.values());
+    }
+
+    synchronized Map<String, List<ServerMessageTestModel>> getMessageMap() {
+        return messages.stream()
+                .collect(HashMap::new, (m, v) -> m.merge(v.getType(), Stream.of(v).collect(Collectors.toList()), (a, n) -> {
+                    a.addAll(n);
+                    return a;
+                }), Map::putAll);
     }
 }

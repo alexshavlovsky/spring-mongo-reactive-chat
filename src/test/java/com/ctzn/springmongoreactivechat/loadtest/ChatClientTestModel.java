@@ -1,10 +1,13 @@
 package com.ctzn.springmongoreactivechat.loadtest;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 class ChatClientTestModel {
-    String sessionId;
-    String clientId;
-    String nick;
+    @EqualsAndHashCode.Include
+    private String sessionId;
+    private String clientId;
+    private String nick;
 }

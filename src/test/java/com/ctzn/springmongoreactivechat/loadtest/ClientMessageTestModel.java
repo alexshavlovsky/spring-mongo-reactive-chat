@@ -6,9 +6,9 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 class ClientMessageTestModel {
-    int frameId;
-    String clientId;
-    String userNick;
-    String type;
-    String payload;
+    private int frameId;
+    private String clientId;
+    private String userNick;
+    private String type;
+    private String payload;
 }
