@@ -106,6 +106,7 @@ public class TestClient extends WebSocketClient {
         return nick;
     }
 
+    // TODO rewrite all the thread-safety logic
     synchronized Set<ChatClientTestModel> getChatSnapshot() {
         return new HashSet<>(chatSnapshot.values());
     }

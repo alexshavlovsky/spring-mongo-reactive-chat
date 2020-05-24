@@ -2,6 +2,7 @@ package com.ctzn.springmongoreactivechat.loadtest;
 
 import org.java_websocket.enums.ReadyState;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -103,16 +104,19 @@ public class IntegrationLoadTest {
     }
 
     @Test
+    @Ignore
     public void test_25_bots() throws InterruptedException {
         spawnBots(25);
     }
 
     @Test
+    @Ignore
     public void test_50_bots() throws InterruptedException {
         spawnBots(50);
     }
 
     @Test
+    @Ignore
     public void test_100_bots() throws InterruptedException {
         spawnBots(100);
     }
