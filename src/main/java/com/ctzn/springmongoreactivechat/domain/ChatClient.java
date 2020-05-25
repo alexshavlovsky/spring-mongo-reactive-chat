@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ChatClient {
     @NonNull
-    String sessionId;
-    String clientId;
-    String nick;
+    private String sessionId;
+    private String clientId;
+    private String nick;
 
     public static ChatClient newInstance(String sessionId) {
         return new ChatClient(sessionId);

@@ -7,16 +7,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 abstract class AbstractTestClient {
-    private final ChatClient chatClient = new ChatClient();
-    final ClientMessageFactory clientMessageFactory = new ClientMessageFactory(chatClient);
+    private final ChatClient chatClient;
+    final ClientMessageFactory clientMessageFactory;
 
     AbstractTestClient() {
-        this(UUID.randomUUID().toString());
-    }
-
-    AbstractTestClient(String nick) {
-        chatClient.setClientId(UUID.randomUUID().toString());
-        chatClient.setNick(nick);
+        chatClient = new ChatClient(null, UUID.randomUUID().toString(), UUID.randomUUID().toString());
+        clientMessageFactory = new ClientMessageFactory(chatClient);
     }
 
     private int snapshotVersion = -1;
@@ -24,13 +20,14 @@ abstract class AbstractTestClient {
     private final Map<String, ChatClient> chatSnapshot = new HashMap<>();
     final Gson gson = new Gson();
 
-    void handleServerMessage(String rawText) {
-        if ("PUBLISH".equals(rawText)) {
-            System.out.println(Thread.currentThread().getName());
+    abstract boolean publishStrategy(ServerMessage msg);
+
+    void handleServerMessage(ServerMessage msg) {
+        if (resultHolder != null) return;
+        if (publishStrategy(msg)) {
             publishResults();
             return;
         }
-        ServerMessage msg = gson.fromJson(rawText, ServerMessage.class);
         messages.add(msg);
         if ("snapshot".equals(msg.getType())) {
             ChatSnapshot snapshot = gson.fromJson(msg.getPayload(), ChatSnapshot.class);
@@ -74,7 +71,7 @@ abstract class AbstractTestClient {
 
     private FinalHolder resultHolder;
 
-    void publishResults() {
+    private void publishResults() {
         if (resultHolder != null) throw new RuntimeException("Only one publication per instance is allowed");
         resultHolder = new FinalHolder(
                 chatSnapshot.values(),
@@ -85,20 +82,11 @@ abstract class AbstractTestClient {
         );
     }
 
-    private void sleep() {
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-        }
-    }
-
     Collection<ChatClient> getSnapshot() {
-        for (int i = 0; i < 10 && resultHolder == null; i++) sleep();
         return resultHolder == null ? null : resultHolder.snapshot;
     }
 
     Map<String, List<ServerMessage>> getMessagesMap() {
-        for (int i = 0; i < 10 && resultHolder == null; i++) sleep();
         return resultHolder == null ? null : resultHolder.messagesMap;
     }
 }

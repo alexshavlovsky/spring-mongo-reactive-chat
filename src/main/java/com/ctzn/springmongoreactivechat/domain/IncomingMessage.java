@@ -4,9 +4,9 @@ import lombok.Data;
 
 @Data
 public class IncomingMessage {
-    int frameId;
-    String clientId;
-    String userNick;
-    String type;
-    String payload;
+    private int frameId;
+    private String clientId;
+    private String userNick;
+    private String type;
+    private String payload;
 }

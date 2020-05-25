@@ -36,7 +36,7 @@ public class Message {
     }
 
     public static Message newText(WebSocketSession session, IncomingMessage message) {
-        return new Message(session.getId(), message.getClientId(), message.getUserNick() == null ? "" : message.getUserNick(), message.type, message.getPayload());
+        return new Message(session.getId(), message.getClientId(), message.getUserNick() == null ? "" : message.getUserNick(), message.getType(), message.getPayload());
     }
 
     public static Message newObject(String type, String payload) {

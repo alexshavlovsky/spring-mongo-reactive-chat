@@ -1,17 +1,13 @@
 package com.ctzn.springmongoreactivechat.reactiveloadtest;
 
-import org.junit.Ignore;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
-import reactor.core.publisher.DirectProcessor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
@@ -20,28 +16,39 @@ import java.util.stream.Collectors;
 public class ReactorNettyClientLoadTest {
 
     @Test
-    @Ignore
     public void reactor_load_test() throws InterruptedException {
-        for (int z = 0; z < 2; z++) {
-            DirectProcessor<String> commands = DirectProcessor.create();
-            List<ReactiveTestClient> bots = new ArrayList<>();
-            System.out.println("Prepare");
-            for (int i = 0; i < 100; i++) bots.add(new ReactiveTestClient(commands));
-            System.out.println("Wait");
-            Thread.sleep(1000);
-            commands.onNext("PUBLISH");
-            System.out.println("Wait");
-            Thread.sleep(1000);
+        int ITER_NUM = 10;
+        int BOTS_NUM = 10;
+        for (int z = 0; z < ITER_NUM; z++) {
+            System.out.println("Iteration: " + z);
+            System.out.println("-------------");
+            SupervisorBot supervisorBot = new SupervisorBot();
+            System.out.println("Connect a supervisor");
+            List<SpawnBot> bots = new ArrayList<>();
+            System.out.println("Spawn bots");
+            for (int i = 0; i < BOTS_NUM; i++) bots.add(new SpawnBot(supervisorBot));
+            Thread.sleep(2000);
             System.out.println("Assert");
-            ReactiveTestClient bot = bots.get(0);
-            Map<String, List<ServerMessage>> msgMap = bot.getMessagesMap();
-            System.out.println(bot.getNick() + ": " + msgMap.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue().size())
-                    .collect(Collectors.joining(", ", "{", "}")));
+            Set<String> expectedNicksSet = bots.stream().map(ReactiveTestClient::getNick).collect(Collectors.toSet());
+            expectedNicksSet.add(supervisorBot.getNick());
+            bots.forEach(bot -> {
+                Collection<ChatClient> snapshot = bot.getSnapshot();
+                Map<String, List<ServerMessage>> msgMap = bot.getMessagesMap();
+                Assert.assertNotNull("Every bot has received an initial snapshot", msgMap.get("snapshot"));
+                Assert.assertEquals("Every bot has received an initial snapshot", 1, msgMap.get("snapshot").size());
+                Assert.assertEquals("All bots have been visible", BOTS_NUM + 1, snapshot.size());
+                Set<String> actualNicksSet = snapshot.stream().map(ChatClient::getNick).collect(Collectors.toSet());
+                Assert.assertEquals("All bots have been visible", expectedNicksSet, actualNicksSet);
 
-            Collection<ChatClient> snapshot = bot.getSnapshot();
-            System.out.println(snapshot.size());
-            System.out.println("Close");
+                System.out.println(snapshot.size() + ": " + bot.getNick() + ": " + msgMap.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue().size())
+                        .collect(Collectors.joining(", ", "{", "}")));
+            });
+            System.out.println("Disconnect bots");
             bots.forEach(ReactiveTestClient::close);
+            System.out.println("Disconnect the supervisor");
+            supervisorBot.close();
+            Thread.sleep(1000);
+            System.out.println("Done\n");
         }
     }
 }

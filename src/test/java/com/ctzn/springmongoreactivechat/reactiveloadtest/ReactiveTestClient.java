@@ -10,16 +10,24 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.time.Duration;
 
-public class ReactiveTestClient extends AbstractTestClient implements WebSocketHandler {
+abstract class ReactiveTestClient extends AbstractTestClient implements WebSocketHandler {
 
     private final static WebSocketClient client = new ReactorNettyWebSocketClient();
     private final Disposable disposable;
-    private final Flux<String> commands;
+    private final Flux<ClientMessage> out;
 
-    ReactiveTestClient(Flux<String> commands) {
-        this.commands = commands;
-        disposable = client.execute(URI.create("ws://localhost:8085/ws/"), this).subscribe();
+    ReactiveTestClient(String command, int delay) {
+        super();
+        Flux<ClientMessage> updateMe = Flux.just(clientMessageFactory.getUpdateMe());
+        this.out = command == null ? updateMe : updateMe
+                .concatWith(Flux.just(clientMessageFactory.getMsg(command)).delaySequence(Duration.ofMillis(delay)));
+        disposable = open(this);
+    }
+
+    private Disposable open(WebSocketHandler handler) {
+        return client.execute(URI.create("ws://localhost:8085/ws/"), handler).subscribe();
     }
 
     void close() {
@@ -28,12 +36,13 @@ public class ReactiveTestClient extends AbstractTestClient implements WebSocketH
 
     @Override
     public Mono<Void> handle(WebSocketSession session) {
-        Flux<WebSocketMessage> outgoingMessages = Flux.just(clientMessageFactory.getUpdateMe())
+        Flux<WebSocketMessage> outgoingMessages = out
                 .map(gson::toJson)
                 .map(session::textMessage);
 
         Mono<Void> incomingMessages = session.receive()
-                .map(WebSocketMessage::getPayloadAsText).mergeWith(commands)
+                .map(WebSocketMessage::getPayloadAsText)
+                .map(json -> gson.fromJson(json, ServerMessage.class))
                 .doOnNext(this::handleServerMessage).then();
 
         return session.send(outgoingMessages).and(incomingMessages);

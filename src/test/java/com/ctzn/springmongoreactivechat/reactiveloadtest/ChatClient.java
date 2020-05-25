@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 class ChatClient {
-    private String sessionId;
-    private String clientId;
-    private String nick;
+    private final String sessionId;
+    private final String clientId;
+    private final String nick;
 }
