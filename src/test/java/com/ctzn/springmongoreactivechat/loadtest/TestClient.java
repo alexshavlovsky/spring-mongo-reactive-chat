@@ -25,7 +25,6 @@ public class TestClient extends WebSocketClient {
     private int snapshotVersion = -1;
 
     final CountDownLatch snapshotLatch = new CountDownLatch(1);
-    final CountDownLatch snapshotUpdateSelfLatch = new CountDownLatch(1);
     final CountDownLatch disconnectLatch = new CountDownLatch(1);
 
     private TestClient(URI serverUri, String nickPrefix, boolean putOnlySnapshot) {
@@ -41,6 +40,10 @@ public class TestClient extends WebSocketClient {
     private void sendTypedMessage(String type, String payload) {
         ClientMessageTestModel msg = new ClientMessageTestModel(frameId++, clientId, nick, type, payload);
         send(gson.toJson(msg));
+    }
+
+    private void sendHello() {
+        sendTypedMessage("hello", "");
     }
 
     private void updateClientDetails() {
@@ -71,7 +74,6 @@ public class TestClient extends WebSocketClient {
                 ChatClientTestModel user = update.getUser();
                 switch (update.getType()) {
                     case "updateUser":
-                        if (nick.equals(update.getUser().getNick())) snapshotUpdateSelfLatch.countDown();
                     case "addUser":
                         chatSnapshot.put(user.getSessionId(), user);
                         break;
@@ -86,7 +88,7 @@ public class TestClient extends WebSocketClient {
 
     @Override
     public void onOpen(ServerHandshake handshake) {
-        updateClientDetails();
+        sendHello();
     }
 
     @Override

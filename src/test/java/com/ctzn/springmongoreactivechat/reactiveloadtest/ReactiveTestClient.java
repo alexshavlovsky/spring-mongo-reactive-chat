@@ -20,8 +20,8 @@ abstract class ReactiveTestClient extends AbstractTestClient implements WebSocke
 
     ReactiveTestClient(String command, int delay) {
         super();
-        Flux<ClientMessage> updateMe = Flux.just(clientMessageFactory.getUpdateMe());
-        this.out = command == null ? updateMe : updateMe
+        Flux<ClientMessage> hello = Flux.just(clientMessageFactory.getHello());
+        this.out = command == null ? hello : hello
                 .concatWith(Flux.just(clientMessageFactory.getMsg(command)).delaySequence(Duration.ofMillis(delay)));
         disposable = open(this);
     }

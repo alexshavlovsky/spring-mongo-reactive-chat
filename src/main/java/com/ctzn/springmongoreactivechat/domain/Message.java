@@ -24,7 +24,7 @@ public class Message {
     @NonNull
     private String clientId;
     @NonNull
-    private String userNick;
+    private String nick;
     @NonNull
     private String type;
     @NonNull
@@ -36,7 +36,7 @@ public class Message {
     }
 
     public static Message newText(WebSocketSession session, IncomingMessage message) {
-        return new Message(session.getId(), message.getClientId(), message.getUserNick() == null ? "" : message.getUserNick(), message.getType(), message.getPayload());
+        return new Message(session.getId(), message.getClientId(), message.getNick(), message.getType(), message.getPayload());
     }
 
     public static Message newObject(String type, String payload) {

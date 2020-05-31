@@ -3,7 +3,7 @@ package com.ctzn.springmongoreactivechat.reactiveloadtest;
 class SupervisorBot extends ReactiveTestClient {
 
     SupervisorBot() {
-        super("PUBLISH", 1000);
+        super("PUBLISH", 2000);
     }
 
     @Override

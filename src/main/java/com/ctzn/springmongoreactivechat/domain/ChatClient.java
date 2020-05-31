@@ -1,18 +1,16 @@
 package com.ctzn.springmongoreactivechat.domain;
 
 import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 
 @Data
-@RequiredArgsConstructor
 public class ChatClient {
-    @NonNull
-    private String sessionId;
-    private String clientId;
-    private String nick;
+    @ToString.Exclude
+    private final String sessionId;
+    private final String clientId;
+    private final String nick;
 
-    public static ChatClient newInstance(String sessionId) {
-        return new ChatClient(sessionId);
+    public static ChatClient fromMessage(String sessionId, IncomingMessage message) {
+        return new ChatClient(sessionId, message.getClientId(), message.getNick());
     }
 }

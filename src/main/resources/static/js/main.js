@@ -18,13 +18,23 @@ let wsClient;
 let snapshot;
 let frameID = 0;
 
+function sendTypedMessage(type, payload) {
+    wsClient.send(JSON.stringify({
+        frameId: frameID++,
+        type,
+        clientId: CLIENT_ID,
+        nick: CLIENT_ID.slice(0,8),
+        payload
+    }));
+}
+
 function ws_init() {
     wsClient = new WebSocket(WS_API_URL);
     wsClient.onopen = () => {
         clearConsole();
         frameID = 0;
         adaptInfo('The ws connection is open');
-        wsClient.send(JSON.stringify({frameId: frameID++, type: 'updateMe', clientId: CLIENT_ID,}));
+        sendTypedMessage("hello", "");
     };
     wsClient.onerror = () => {
     };
@@ -45,21 +55,21 @@ function wsDispatcher(event) {
         if (json.type === 'snapshot') {
             snapshot = JSON.parse(json.payload);
             users_list.clear();
-            snapshot.users.forEach(c => users_list.set(c.sessionId, c.sessionId));
+            snapshot.users.forEach(c => users_list.set(c.sessionId, c.nick));
             redrawUsersList();
         }
         if (json.type === 'snapshotUpdate') {
             let update = JSON.parse(json.payload);
             if (update.snapshotVer >= snapshot.snapshotVer) {
                 let user = update.user;
-                if (update.type === 'addUser') users_list.set(user.sessionId, user.sessionId);
+                if (update.type === 'addUser') users_list.set(user.sessionId, user.nick);
                 if (update.type === 'removeUser') users_list.delete(user.sessionId);
                 redrawUsersList();
             }
         }
         if (json.type === 'info') adaptInfo(json.time + ' ' + json.payload);
         if (json.type === 'error') adaptError(json.time + ' ' + json.payload);
-        if (json.type === 'msg') adaptMsg(CLIENT_ID !== json.clientId, json.time, json.ago, json.sessionId, json.payload);
+        if (json.type === 'msg') adaptMsg(CLIENT_ID !== json.clientId, json.time, json.ago, json.nick, json.payload);
         return;
     } catch (e) {
         adaptError('Error while parsing backend message: ' + e);
@@ -83,12 +93,7 @@ function sendOnEnter(event) {
 
 function send() {
     if (elInput.value === "") return;
-    wsClient.send(JSON.stringify({
-        frameId: frameID++,
-        type: 'msg',
-        clientId: CLIENT_ID,
-        payload: elInput.value
-    }));
+    sendTypedMessage("msg", elInput.value);
     elInput.value = "";
 }
 

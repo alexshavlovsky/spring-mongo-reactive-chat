@@ -1,6 +1,7 @@
 package com.ctzn.springmongoreactivechat.reactiveloadtest;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 public class ReactorNettyClientLoadTest {
 
     @Test
+    @Ignore
     public void reactor_load_test() throws InterruptedException {
         int ITER_NUM = 10;
         int BOTS_NUM = 10;
@@ -27,7 +29,7 @@ public class ReactorNettyClientLoadTest {
             List<SpawnBot> bots = new ArrayList<>();
             System.out.println("Spawn bots");
             for (int i = 0; i < BOTS_NUM; i++) bots.add(new SpawnBot(supervisorBot));
-            Thread.sleep(2000);
+            Thread.sleep(4000);
             System.out.println("Assert");
             Set<String> expectedNicksSet = bots.stream().map(ReactiveTestClient::getNick).collect(Collectors.toSet());
             expectedNicksSet.add(supervisorBot.getNick());

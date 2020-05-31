@@ -58,8 +58,6 @@ public class IntegrationLoadTest {
 
         waitOnLatch("Waiting for snapshot", bot -> bot.snapshotLatch.getCount() != 0);
 
-        waitOnLatch("Waiting for snapshot update self", bot -> bot.snapshotUpdateSelfLatch.getCount() != 0);
-
         TestClient chatObserver = bots.remove(bots.size() - 1);
 
         log("Send messages");
@@ -85,7 +83,7 @@ public class IntegrationLoadTest {
             log(bot.getNick() + ": " + msgMap.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue().size())
                     .collect(Collectors.joining(", ", "{", "}")));
             List<ServerMessageTestModel> msgList = msgMap.get("msg");
-            Set<String> actualMsgSet = msgList.stream().map(ServerMessageTestModel::getUserNick).filter(n -> n.contains(nickPrefix)).collect(Collectors.toSet());
+            Set<String> actualMsgSet = msgList.stream().map(ServerMessageTestModel::getNick).filter(n -> n.contains(nickPrefix)).collect(Collectors.toSet());
             Assert.assertEquals("All messages was received", expectedSet, actualMsgSet);
             Set<String> actualPutOnlyUserSet = bot.getChatSnapshot().stream().map(ChatClientTestModel::getNick).filter(n -> n != null && n.startsWith(nickPrefix)).collect(Collectors.toSet());
             Assert.assertEquals("All bots was visible", expectedSet, actualPutOnlyUserSet);

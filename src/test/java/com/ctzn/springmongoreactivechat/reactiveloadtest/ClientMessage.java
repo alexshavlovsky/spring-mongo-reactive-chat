@@ -8,7 +8,7 @@ import lombok.Data;
 class ClientMessage {
     private int frameId;
     private String clientId;
-    private String userNick;
+    private String nick;
     private String type;
     private String payload;
 }

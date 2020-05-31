@@ -7,7 +7,7 @@ class ServerMessage {
     private String id;
     private String sessionId;
     private String clientId;
-    private String userNick;
+    private String nick;
     private String type;
     private String payload;
     private Long timestamp;

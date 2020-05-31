@@ -1,7 +1,7 @@
 package com.ctzn.springmongoreactivechat.websocket;
 
+import com.ctzn.springmongoreactivechat.domain.ChatClient;
 import com.ctzn.springmongoreactivechat.domain.DomainMapper;
-import com.ctzn.springmongoreactivechat.domain.IncomingMessage;
 import com.ctzn.springmongoreactivechat.domain.Message;
 import com.ctzn.springmongoreactivechat.service.BroadcastMessageService;
 import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
@@ -10,20 +10,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
-import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoProcessor;
+
+import java.time.Duration;
+
+import static com.ctzn.springmongoreactivechat.websocket.ClientStreamTransformers.parseGreeting;
+import static com.ctzn.springmongoreactivechat.websocket.ClientStreamTransformers.parseJsonMessage;
 
 @Component
 public class MessageHandler implements WebSocketHandler {
 
-    private Logger LOG = LoggerFactory.getLogger(MessageHandler.class);
-
-    private BroadcastMessageService broadcastMessageService;
-    private DirectBroadcastService directBroadcastService;
-    private ChatBrokerService chatBroker;
-    private DomainMapper mapper;
+    private final BroadcastMessageService broadcastMessageService;
+    private final DirectBroadcastService directBroadcastService;
+    private final ChatBrokerService chatBroker;
+    private final DomainMapper mapper;
 
     public MessageHandler(BroadcastMessageService broadcastMessageService, DirectBroadcastService directBroadcastService, ChatBrokerService chatBroker, DomainMapper mapper) {
         this.broadcastMessageService = broadcastMessageService;
@@ -35,28 +38,46 @@ public class MessageHandler implements WebSocketHandler {
     @Override
     public Mono<Void> handle(WebSocketSession session) {
         String sessionId = session.getId();
+        Logger LOG = LoggerFactory.getLogger(MessageHandler.class.getName() + " [" + sessionId + "]");
+
+        MonoProcessor<ChatClient> clientGreeting = MonoProcessor.create();
 
         Mono<Void> input = session.receive()
-                .map(WebSocketMessage::getPayloadAsText)
-                .doOnNext(rawText -> LOG.info("<--[{}] {}", sessionId, rawText))
-                .map(rawText -> mapper.fromJson(rawText, IncomingMessage.class))
-                .doOnNext(message -> {
-                    if ("updateMe".equals(message.getType())) chatBroker.updateClient(sessionId, message);
-                    if ("setTyping".equals(message.getType()))
-                        directBroadcastService.send(Message.newText(session, message));
+                .transform(parseJsonMessage(mapper, LOG))
+                .transform(parseGreeting(sessionId, clientGreeting, LOG))
+                // incoming message dispatcher
+                .flatMap(message -> {
+                    switch (message.getType()) {
+                        case "updateMe":
+                            chatBroker.updateClient(sessionId, message, LOG);
+                            break;
+                        case "setTyping":
+                            LOG.trace("...{}", message);
+                            directBroadcastService.send(Message.newText(session, message));
+                            break;
+                        case "msg":
+                        case "richMsg":
+                            LOG.info("<--{}", message);
+                            broadcastMessageService.saveMessage(Message.newText(session, message));
+                            break;
+                        default:
+                            Exception e = new UnsupportedOperationException("Message type is not supported: " + message);
+                            LOG.error(e.getMessage());
+                            return Mono.error(e);
+                    }
+                    return Mono.just(message);
                 })
-                .filter(message -> "msg".equals(message.getType()) || "richMsg".equals(message.getType()))
-                .map(message -> Message.newText(session, message))
-                .flatMap(broadcastMessageService::saveMessage)
-                .doFinally(sig -> chatBroker.removeClient(sessionId))
                 .then();
 
-        Flux<String> source = chatBroker.addClient(sessionId)
-                .concatWith(chatBroker.getBroadcastTopic()
-                        .mergeWith(broadcastMessageService.getTopic())
-                        .mergeWith(directBroadcastService.getTopic()))
-                .map(mapper::asJson)
-                .doOnNext(json -> LOG.trace("==>[{}] {}", sessionId, json));
+        Flux<String> source = clientGreeting.take(Duration.ofSeconds(5)).flatMapMany(client ->
+                chatBroker.addClient(sessionId, client, LOG)
+                        .concatWith(chatBroker.getBroadcastTopic()
+                                .mergeWith(broadcastMessageService.getTopic())
+                                .mergeWith(directBroadcastService.getTopic()))
+                        .map(mapper::asJson)
+                        .doOnNext(json -> LOG.trace("==>{}", json))
+                        .doFinally(sig -> chatBroker.removeClient(sessionId, LOG))
+        );
 
         Mono<Void> output = session.send(source.map(session::textMessage));
 

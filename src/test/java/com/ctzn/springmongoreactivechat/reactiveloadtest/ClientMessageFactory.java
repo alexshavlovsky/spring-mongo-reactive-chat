@@ -12,6 +12,10 @@ class ClientMessageFactory {
         return new ClientMessage(frameId++, chatClient.getClientId(), chatClient.getNick(), type, payload);
     }
 
+    ClientMessage getHello() {
+        return getTypedMessage("hello", "");
+    }
+
     ClientMessage getUpdateMe() {
         return getTypedMessage("updateMe", "");
     }
