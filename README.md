@@ -48,3 +48,30 @@ Database                       | Reactive MongoDB
 Protocol                       | Reactive WebSockets
 Frontend engine                | Pure JS + WebSockets + Bootstrap
 or (see description)           | Angular 9 + PrimeNG
+
+## Chat protocol summary
+```
+                       /-----------Messages-----------\
+                      /                                \
+                     /                          /---Client message--\
+                    /                          /                     \
+                   /                      Authentication:       Public messages:
+                  /                     - hello    (U)        - msg       (M) (text)
+        /----Server Message------\      - updateMe (U)        - richMsg   (M) (text with file attachments)
+       /          |               \                           - setTyping (M) (repeated every 2 seconds
+      /           |                \                                           while the user is typing)
+  info (M)    snapshot (U)      snapshotUpdate (M)
+  (text)   (list of clients)   (mutation of clients list)
+                                - addUser     (new user has been connected)
+                                - updateUser  (user has changed his nick and/or uid)
+                                - removeUser  (user has been disconnected)
+
+   (M) - multicast messages (these messages are forwarded by the server to each connected client):
+           - server-clients: info, snapshotUpdate
+           - client-clients: msg, richMsg, setTyping
+   (U) - unicast messages:
+           - hello     client-server greeting with user data (uid and nick)
+                       must be send by a client within first 5 seconds of ws session
+           - snapshot  server-client greeting with the list of clients in the chat
+           - updateMe  client-server with new user data (uid and nick)
+```

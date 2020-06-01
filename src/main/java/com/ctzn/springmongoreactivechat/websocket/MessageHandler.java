@@ -1,8 +1,9 @@
 package com.ctzn.springmongoreactivechat.websocket;
 
-import com.ctzn.springmongoreactivechat.domain.ChatClient;
 import com.ctzn.springmongoreactivechat.domain.DomainMapper;
 import com.ctzn.springmongoreactivechat.domain.Message;
+import com.ctzn.springmongoreactivechat.domain.dto.ChatClient;
+import com.ctzn.springmongoreactivechat.domain.dto.User;
 import com.ctzn.springmongoreactivechat.service.BroadcastMessageService;
 import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
 import com.ctzn.springmongoreactivechat.service.DirectBroadcastService;
@@ -40,41 +41,44 @@ public class MessageHandler implements WebSocketHandler {
         String sessionId = session.getId();
         Logger LOG = LoggerFactory.getLogger(MessageHandler.class.getName() + " [" + sessionId + "]");
 
-        MonoProcessor<ChatClient> clientGreeting = MonoProcessor.create();
+        MonoProcessor<User> clientGreeting = MonoProcessor.create();
 
         Mono<Void> input = session.receive()
                 .transform(parseJsonMessage(mapper, LOG))
-                .transform(parseGreeting(sessionId, clientGreeting, LOG))
+                .transform(parseGreeting(clientGreeting, LOG))
                 // incoming message dispatcher
-                .flatMap(message -> {
-                    switch (message.getType()) {
+                .flatMap(userMessage -> {
+                    switch (userMessage.getType()) {
                         case "updateMe":
-                            chatBroker.updateClient(sessionId, message, LOG);
+                            ChatClient previous = chatBroker.updateClient(userMessage.getUser().toChatClient(sessionId), LOG);
+                            directBroadcastService.send(Message.newInfo(String.format(
+                                    "(%s) has changed nick to (%s)", previous.getNick(), userMessage.getUser().getNick()
+                            )));
                             break;
                         case "setTyping":
-                            LOG.trace("...{}", message);
-                            directBroadcastService.send(Message.newText(session, message));
+                            LOG.trace("...{}", userMessage);
+                            directBroadcastService.send(userMessage.toMessage(sessionId));
                             break;
                         case "msg":
                         case "richMsg":
-                            LOG.info("<--{}", message);
-                            broadcastMessageService.saveMessage(Message.newText(session, message));
+                            LOG.info("<--{}", userMessage);
+                            broadcastMessageService.saveMessage(userMessage.toMessage(sessionId));
                             break;
                         default:
-                            Exception e = new UnsupportedOperationException("Message type is not supported: " + message);
+                            Exception e = new UnsupportedOperationException("Message type is not supported: " + userMessage);
                             LOG.error(e.getMessage());
                             return Mono.error(e);
                     }
-                    return Mono.just(message);
+                    return Mono.just(userMessage);
                 })
                 .then();
 
-        Flux<String> source = clientGreeting.take(Duration.ofSeconds(5)).flatMapMany(client ->
-                chatBroker.addClient(sessionId, client, LOG)
+        Flux<String> source = clientGreeting.take(Duration.ofSeconds(5)).flatMapMany(user ->
+                chatBroker.addClient(user.toChatClient(sessionId), LOG)
                         .concatWith(chatBroker.getBroadcastTopic()
                                 .mergeWith(broadcastMessageService.getTopic())
                                 .mergeWith(directBroadcastService.getTopic()))
-                        .map(mapper::asJson)
+                        .map(mapper::toJson)
                         .doOnNext(json -> LOG.trace("==>{}", json))
                         .doFinally(sig -> chatBroker.removeClient(sessionId, LOG))
         );

@@ -1,5 +1,7 @@
 package com.ctzn.springmongoreactivechat.domain;
 
+import com.ctzn.springmongoreactivechat.domain.dto.ChatSnapshot;
+import com.ctzn.springmongoreactivechat.domain.dto.ChatSnapshotUpdate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
@@ -8,7 +10,7 @@ public class DomainMapper {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public String asJson(Object object) {
+    public String toJson(Object object) {
         try {
             return mapper.writeValueAsString(object);
         } catch (Exception e) {
@@ -18,5 +20,13 @@ public class DomainMapper {
 
     public <T> T fromJson(String json, Class<T> clazz) throws Exception {
         return mapper.readValue(json, clazz);
+    }
+
+    public Message toMessage(ChatSnapshot snapshot) {
+        return Message.newSnapshot(toJson(snapshot));
+    }
+
+    public Message toMessage(ChatSnapshotUpdate snapshotUpdate) {
+        return Message.newSnapshotUpdate(toJson(snapshotUpdate));
     }
 }

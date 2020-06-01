@@ -1,8 +1,8 @@
 package com.ctzn.springmongoreactivechat.websocket;
 
-import com.ctzn.springmongoreactivechat.domain.ChatClient;
 import com.ctzn.springmongoreactivechat.domain.DomainMapper;
-import com.ctzn.springmongoreactivechat.domain.IncomingMessage;
+import com.ctzn.springmongoreactivechat.domain.dto.User;
+import com.ctzn.springmongoreactivechat.domain.dto.IncomingMessage;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
@@ -26,13 +26,13 @@ class ClientStreamTransformers {
                 });
     }
 
-    static Function<Flux<IncomingMessage>, Publisher<IncomingMessage>> parseGreeting(String sessionId, Subscriber<ChatClient> clientGreeting, Logger LOG) {
+    static Function<Flux<IncomingMessage>, Publisher<IncomingMessage>> parseGreeting(Subscriber<User> clientGreeting, Logger LOG) {
         return in -> in
                 .switchOnFirst((signal, flux) -> {
                     if (signal.hasValue()) {
                         IncomingMessage message = signal.get();
                         if (message != null && "hello".equals(message.getType())) {
-                            clientGreeting.onNext(ChatClient.fromMessage(sessionId, message));
+                            clientGreeting.onNext(message.getUser());
                             return flux.skip(1);
                         }
                     }

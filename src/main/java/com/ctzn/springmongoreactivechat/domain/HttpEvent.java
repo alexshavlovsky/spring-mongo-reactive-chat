@@ -15,19 +15,16 @@ import java.util.Date;
 public class HttpEvent {
     @Id
     private String id;
-    private String remoteHost;
-    private int remotePort;
-    private Date timestamp = new Date();
-    private String userAgent;
+    final private String userAgent;
+    final private String remoteHost;
+    final private int remotePort;
+    final private Date timestamp = new Date();
 
     static public HttpEvent fromServerHttpRequest(ServerHttpRequest request) {
-        HttpEvent httpEvent = new HttpEvent();
+        String userAgent = request.getHeaders().getFirst("User-Agent");
         InetSocketAddress address = request.getRemoteAddress();
-        if (address != null) {
-            httpEvent.setRemoteHost(address.getHostString());
-            httpEvent.setRemotePort(address.getPort());
-        }
-        httpEvent.setUserAgent(request.getHeaders().getFirst("User-Agent"));
-        return httpEvent;
+        return address == null ?
+                new HttpEvent(userAgent, null, 0) :
+                new HttpEvent(userAgent, address.getHostString(), address.getPort());
     }
 }

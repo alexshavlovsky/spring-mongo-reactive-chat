@@ -1,45 +1,39 @@
 package com.ctzn.springmongoreactivechat.domain;
 
+import com.ctzn.springmongoreactivechat.domain.dto.ChatClient;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.TypeAlias;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.web.reactive.socket.WebSocketSession;
 
 import java.util.Date;
 
 @Data
-@RequiredArgsConstructor
 @Document
 @TypeAlias("messages")
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class Message {
     @Id
     private String id;
-    @NonNull
-    private String sessionId;
-    @NonNull
-    private String clientId;
-    @NonNull
-    private String nick;
-    @NonNull
-    private String type;
-    @NonNull
-    private String payload;
-    private Date timestamp = new Date();
+    final private ChatClient client;
+    final private String type;
+    final private String payload;
+    final private Date timestamp = new Date();
 
-    public static Message newInfo(String message) {
-        return new Message("", "", "", "info", message);
+    private static Message newServerMessage(String type, String payload) {
+        return new Message(null, type, payload);
     }
 
-    public static Message newText(WebSocketSession session, IncomingMessage message) {
-        return new Message(session.getId(), message.getClientId(), message.getNick(), message.getType(), message.getPayload());
+    public static Message newInfo(String text) {
+        return newServerMessage("info", text);
     }
 
-    public static Message newObject(String type, String payload) {
-        return new Message("", "", "", type, payload);
+    static Message newSnapshot(String payload) {
+        return newServerMessage("snapshot", payload);
+    }
+
+    static Message newSnapshotUpdate(String payload) {
+        return newServerMessage("snapshotUpdate", payload);
     }
 }
