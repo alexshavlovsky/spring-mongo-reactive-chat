@@ -4,6 +4,7 @@ import com.ctzn.springmongoreactivechat.domain.Message;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 
@@ -11,7 +12,7 @@ import reactor.core.publisher.ReplayProcessor;
 @Profile("replay-service")
 public class ReplayBroadcastMessageServiceAdapter implements BroadcastMessageService {
 
-    private ReplayProcessor<Message> chatMessageHistory;
+    private FluxProcessor<Message, Message> chatMessageHistory;
 
     public ReplayBroadcastMessageServiceAdapter() {
         chatMessageHistory = ReplayProcessor.create(50);

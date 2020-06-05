@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.mockclient;
+package com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,6 +14,14 @@ public interface MockChatClient {
     void sendUpdateMe();
 
     void sendSetTyping();
+
+    String getHello();
+
+    String getMsg(String text);
+
+    String getUpdateMe();
+
+    String getSetTyping();
 
     void handleJson(String json);
 

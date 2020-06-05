@@ -1,21 +1,22 @@
 package com.ctzn.springmongoreactivechat.concurrentloadtest;
 
-import com.ctzn.springmongoreactivechat.mockclient.MockChatClient;
-import com.ctzn.springmongoreactivechat.mockclient.MockChatClientImpl;
+import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.MockChatClient;
+import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.MockChatClientImpl;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
 
-class WsTestClient {
+class WsTestClient implements TestClient {
 
     private final WebSocketClient webSocketClient;
     private final MockChatClientImpl chat;
 
-    private WsTestClient(URI uri) {
+    private WsTestClient(URI uri, boolean autoGreeting) {
         webSocketClient = new WebSocketClient(uri) {
             @Override
             public void onOpen(ServerHandshake handshake) {
+                if (autoGreeting) chat.sendHello();
             }
 
             @Override
@@ -38,19 +39,22 @@ class WsTestClient {
         chat = new MockChatClientImpl(webSocketClient::send);
     }
 
-    static WsTestClient newInstance(String uri) {
-        return new WsTestClient(URI.create(uri));
+    static WsTestClient newInstance(String uri, boolean autoGreeting) {
+        return new WsTestClient(URI.create(uri), autoGreeting);
     }
 
-    void connectBlocking() throws InterruptedException {
+    @Override
+    public void connect() throws InterruptedException {
         webSocketClient.connectBlocking();
     }
 
-    void closeBlocking() throws InterruptedException {
+    @Override
+    public void close() throws InterruptedException {
         webSocketClient.closeBlocking();
     }
 
-    MockChatClient getChat() {
+    @Override
+    public MockChatClient getChat() {
         return chat;
     }
 }

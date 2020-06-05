@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.mockclient;
+package com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient;
 
 class ClientMessageFactory {
     private int frameId = 0;

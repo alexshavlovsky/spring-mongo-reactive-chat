@@ -1,9 +1,9 @@
 package com.ctzn.springmongoreactivechat.concurrentloadtest;
 
-import com.ctzn.springmongoreactivechat.mockclient.ChatClient;
-import com.ctzn.springmongoreactivechat.mockclient.MockChatClient;
-import com.ctzn.springmongoreactivechat.mockclient.ServerMessage;
-import com.ctzn.springmongoreactivechat.mockclient.User;
+import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.ChatClient;
+import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.MockChatClient;
+import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.ServerMessage;
+import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.User;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,25 +29,25 @@ public class ConcurrentLoadTest {
         Thread.sleep(500);
     }
 
-    private WsTestClient newBot() throws InterruptedException {
-        WsTestClient client = WsTestClient.newInstance("ws://localhost:8085/ws/");
-        client.connectBlocking();
-        client.getChat().sendHello();
+    private TestClient newBot(TestClientFactory botFactory) throws InterruptedException {
+        TestClient client = botFactory.newClient();
+        client.connect();
         return client;
     }
 
-    private void spawnBots(int botsNum) throws InterruptedException {
-        List<WsTestClient> bots = new ArrayList<>();
+    private void spawnBots(int botsNum, TestClientFactory botFactory) throws InterruptedException {
+        List<TestClient> bots = new ArrayList<>();
 
         log("Bots number: " + botsNum);
-        log("Instantiate bots");
-        for (int i = 0; i < botsNum; i++) bots.add(newBot());
-        WsTestClient chatObserver = newBot();
+
+        log("Connect bots");
+        for (int i = 0; i < botsNum; i++) bots.add(newBot(botFactory));
+        TestClient chatObserver = newBot(botFactory);
         sleep();
 
         log("Send messages");
         List<String> messagesList = new ArrayList<>();
-        for (WsTestClient bot : bots) {
+        for (TestClient bot : bots) {
             String msg = UUID.randomUUID().toString();
             bot.getChat().sendMsg(msg);
             messagesList.add(msg);
@@ -56,7 +56,7 @@ public class ConcurrentLoadTest {
         sleep();
 
         log("Make assertions");
-        Supplier<Stream<User>> users = () -> Stream.concat(Stream.of(chatObserver), bots.stream()).map(WsTestClient::getChat).map(MockChatClient::getUser);
+        Supplier<Stream<User>> users = () -> Stream.concat(Stream.of(chatObserver), bots.stream()).map(TestClient::getChat).map(MockChatClient::getUser);
         Set<String> userNicksList = users.get().map(User::getNick).collect(Collectors.toSet());
         Set<String> userIdsList = users.get().map(User::getId).collect(Collectors.toSet());
         bots.forEach(bot -> {
@@ -73,7 +73,7 @@ public class ConcurrentLoadTest {
         });
 
         log("Disconnect bots");
-        for (WsTestClient bot : bots) bot.closeBlocking();
+        for (TestClient bot : bots) bot.close();
         sleep();
 
         Set<String> actualClients = chatObserver.getChat().getChatClients().stream().map(ChatClient::getNick).collect(Collectors.toSet());
@@ -81,23 +81,31 @@ public class ConcurrentLoadTest {
         Assert.assertEquals("Observer is visible", actualClients.toArray()[0], chatObserver.getChat().getUser().getNick());
 
         log("Disconnect the observer");
-        chatObserver.closeBlocking();
+        chatObserver.close();
+        sleep();
 
         log("Done");
     }
 
+    private final String TEST_URI = "ws://localhost:8085/ws/";
+    private final TestClientFactory wsBotFactory = new TestClientFactory(TEST_URI, "ws", true);
+    private final TestClientFactory reactorBotFactory = new TestClientFactory(TEST_URI, "reactor", true);
+
     @Test
     public void test_25_bots() throws InterruptedException {
-        spawnBots(25);
+        spawnBots(25, reactorBotFactory);
+        spawnBots(25, wsBotFactory);
     }
 
     @Test
     public void test_50_bots() throws InterruptedException {
-        spawnBots(50);
+        spawnBots(50, wsBotFactory);
+        spawnBots(50, reactorBotFactory);
     }
 
     @Test
     public void test_100_bots() throws InterruptedException {
-        spawnBots(100);
+        spawnBots(100, reactorBotFactory);
+        spawnBots(100, wsBotFactory);
     }
 }

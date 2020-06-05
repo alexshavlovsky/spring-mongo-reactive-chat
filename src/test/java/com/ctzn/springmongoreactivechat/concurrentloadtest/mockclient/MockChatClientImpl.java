@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.mockclient;
+package com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient;
 
 import java.util.Collection;
 import java.util.List;
@@ -31,22 +31,42 @@ public class MockChatClientImpl implements MockChatClient {
 
     @Override
     public void sendHello() {
-        sendMessage(messageFactory.getHello());
+        sendMessage(getHello());
     }
 
     @Override
     public void sendMsg(String text) {
-        sendMessage(messageFactory.getMsg(text));
+        sendMessage(getMsg(text));
     }
 
     @Override
     public void sendUpdateMe() {
-        sendMessage(messageFactory.getUpdateMe());
+        sendMessage(getUpdateMe());
     }
 
     @Override
     public void sendSetTyping() {
-        sendMessage(messageFactory.getSetTyping());
+        sendMessage(getSetTyping());
+    }
+
+    @Override
+    public String getHello() {
+        return mapper.toJson(messageFactory.getHello());
+    }
+
+    @Override
+    public String getMsg(String text) {
+        return mapper.toJson(messageFactory.getMsg(text));
+    }
+
+    @Override
+    public String getUpdateMe() {
+        return mapper.toJson(messageFactory.getUpdateMe());
+    }
+
+    @Override
+    public String getSetTyping() {
+        return mapper.toJson(messageFactory.getSetTyping());
     }
 
     @Override
@@ -64,7 +84,7 @@ public class MockChatClientImpl implements MockChatClient {
         return messageHandler.getChatClients();
     }
 
-    private void sendMessage(ClientMessage message) {
-        jsonConsumer.accept(mapper.toJson(message));
+    private void sendMessage(String json) {
+        jsonConsumer.accept(json);
     }
 }
