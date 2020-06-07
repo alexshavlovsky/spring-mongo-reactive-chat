@@ -3,6 +3,8 @@ package com.ctzn.springmongoreactivechat.domain.dto;
 import com.ctzn.springmongoreactivechat.domain.Message;
 import lombok.Value;
 
+import static com.ctzn.springmongoreactivechat.domain.Message.newMessage;
+
 @Value
 public class IncomingMessage {
     int frameId;
@@ -11,6 +13,6 @@ public class IncomingMessage {
     String payload;
 
     public Message toMessage(String sessionId) {
-        return new Message(user.toChatClient(sessionId), type, payload);
+        return newMessage(user.toChatClient(sessionId), type, payload);
     }
 }

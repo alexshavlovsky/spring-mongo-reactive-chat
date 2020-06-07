@@ -19,10 +19,14 @@ public class Message {
     final private ChatClient client;
     final private String type;
     final private String payload;
-    final private Date timestamp = new Date();
+    final private Date timestamp;
+
+    public static Message newMessage(ChatClient client, String type, String payload) {
+        return new Message(client, type, payload, new Date());
+    }
 
     private static Message newServerMessage(String type, String payload) {
-        return new Message(null, type, payload);
+        return newMessage(null, type, payload);
     }
 
     public static Message newInfo(String text) {

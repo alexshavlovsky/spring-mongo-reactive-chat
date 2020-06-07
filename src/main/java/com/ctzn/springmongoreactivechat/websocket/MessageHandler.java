@@ -62,8 +62,7 @@ public class MessageHandler implements WebSocketHandler {
                         case "msg":
                         case "richMsg":
                             LOG.info("<--{}", userMessage);
-                            broadcastMessageService.saveMessage(userMessage.toMessage(sessionId));
-                            break;
+                            return broadcastMessageService.saveMessage(userMessage.toMessage(sessionId));
                         default:
                             Exception e = new UnsupportedOperationException("Message type is not supported: " + userMessage);
                             LOG.error(e.getMessage());
