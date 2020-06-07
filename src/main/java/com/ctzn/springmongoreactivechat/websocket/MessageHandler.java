@@ -3,7 +3,7 @@ package com.ctzn.springmongoreactivechat.websocket;
 import com.ctzn.springmongoreactivechat.domain.DomainMapper;
 import com.ctzn.springmongoreactivechat.domain.Message;
 import com.ctzn.springmongoreactivechat.domain.dto.ChatClient;
-import com.ctzn.springmongoreactivechat.domain.dto.User;
+import com.ctzn.springmongoreactivechat.domain.dto.IncomingMessage;
 import com.ctzn.springmongoreactivechat.service.BroadcastMessageService;
 import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
 import com.ctzn.springmongoreactivechat.service.DirectBroadcastService;
@@ -14,11 +14,10 @@ import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.MonoProcessor;
 
 import java.time.Duration;
 
-import static com.ctzn.springmongoreactivechat.websocket.ClientStreamTransformers.parseGreeting;
+import static com.ctzn.springmongoreactivechat.websocket.ClientStreamTransformers.parseGreetingAndTransform;
 import static com.ctzn.springmongoreactivechat.websocket.ClientStreamTransformers.parseJsonMessage;
 
 @Component
@@ -41,12 +40,12 @@ public class MessageHandler implements WebSocketHandler {
         String sessionId = session.getId();
         Logger LOG = LoggerFactory.getLogger(MessageHandler.class.getName() + " [" + sessionId + "]");
 
-        MonoProcessor<User> clientGreeting = MonoProcessor.create();
+        Flux<IncomingMessage> incoming = session.receive()
+                .transform(parseJsonMessage(mapper, IncomingMessage.class))
+                .publish().autoConnect(2);
 
-        Mono<Void> input = session.receive()
-                .transform(parseJsonMessage(mapper, LOG))
-                .transform(parseGreeting(clientGreeting, LOG))
-                // incoming message dispatcher
+        Mono<Void> input = incoming.transform(parseGreetingAndTransform(f -> f.skip(1)))
+                .doOnError(e -> LOG.error(e.getMessage()))
                 .flatMap(userMessage -> {
                     switch (userMessage.getType()) {
                         case "updateMe":
@@ -72,15 +71,16 @@ public class MessageHandler implements WebSocketHandler {
                 })
                 .then();
 
-        Flux<String> source = clientGreeting.take(Duration.ofSeconds(5)).flatMapMany(user ->
-                chatBroker.addClient(user.toChatClient(sessionId), LOG)
-                        .concatWith(chatBroker.getBroadcastTopic()
-                                .mergeWith(broadcastMessageService.getTopic())
-                                .mergeWith(directBroadcastService.getTopic()))
-                        .map(mapper::toJson)
-                        .doOnNext(json -> LOG.trace("==>{}", json))
-                        .doFinally(sig -> chatBroker.removeClient(sessionId, LOG))
-        );
+        Flux<String> source = incoming.transform(parseGreetingAndTransform(f -> f)).next().take(Duration.ofSeconds(5))
+                .flatMapMany(message ->
+                        chatBroker.addClient(message.getUser().toChatClient(sessionId), LOG)
+                                .concatWith(chatBroker.getBroadcastTopic()
+                                        .mergeWith(broadcastMessageService.getTopic())
+                                        .mergeWith(directBroadcastService.getTopic()))
+                                .map(mapper::toJson)
+                                .doOnNext(json -> LOG.trace("==>{}", json))
+                                .doFinally(sig -> chatBroker.removeClient(sessionId, LOG))
+                );
 
         Mono<Void> output = session.send(source.map(session::textMessage));
 
