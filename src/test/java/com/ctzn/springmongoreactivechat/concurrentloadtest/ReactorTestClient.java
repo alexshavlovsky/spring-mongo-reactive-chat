@@ -8,7 +8,7 @@ import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClien
 import org.springframework.web.reactive.socket.client.WebSocketClient;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
 
@@ -20,12 +20,13 @@ class ReactorTestClient implements TestClient {
     private final WebSocketHandler handler;
     private final static WebSocketClient client = new ReactorNettyWebSocketClient();
     private Disposable disposable;
-    private final FluxProcessor<String, String> out = UnicastProcessor.create();
-    private final MockChatClientImpl chat = new MockChatClientImpl(out::onNext);
+    private final UnicastProcessor<String> processor = UnicastProcessor.create();
+    private final FluxSink<String> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
+    private final MockChatClientImpl chat = new MockChatClientImpl(sink::next);
 
     private ReactorTestClient(URI uri, boolean autoGreeting) {
         this.uri = uri;
-        Flux<String> output = autoGreeting ? Flux.just(chat.getHello()).concatWith(out) : out;
+        Flux<String> output = autoGreeting ? Flux.just(chat.getHello()).concatWith(processor) : processor;
         handler = session -> Mono.zip(
                 session.receive().map(WebSocketMessage::getPayloadAsText).doOnNext(chat::handleJson).then(),
                 session.send(output.map(session::textMessage))

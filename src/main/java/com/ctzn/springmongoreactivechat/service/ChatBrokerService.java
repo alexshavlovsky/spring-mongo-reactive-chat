@@ -7,6 +7,7 @@ import com.ctzn.springmongoreactivechat.domain.dto.ChatSnapshot;
 import com.ctzn.springmongoreactivechat.domain.dto.ChatSnapshotUpdate;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 
@@ -23,12 +24,13 @@ public class ChatBrokerService {
         this.mapper = mapper;
     }
 
-    private final ReplayProcessor<Message> broadcastTopic = ReplayProcessor.create(10);
+    private final ReplayProcessor<Message> processor = ReplayProcessor.create(20);
+    private final FluxSink<Message> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
     private final Map<String, ChatClient> clients = new HashMap<>();
     private int snapshotVersion = 0;
 
     public ReplayProcessor<Message> getBroadcastTopic() {
-        return broadcastTopic;
+        return processor;
     }
 
     synchronized public Mono<Message> addClient(ChatClient client, Logger log) {
@@ -62,6 +64,6 @@ public class ChatBrokerService {
     }
 
     private void broadcast(String type, ChatClient client) {
-        broadcastTopic.onNext(mapper.toMessage(new ChatSnapshotUpdate(snapshotVersion, type, client)));
+        sink.next(mapper.toMessage(new ChatSnapshotUpdate(snapshotVersion, type, client)));
     }
 }

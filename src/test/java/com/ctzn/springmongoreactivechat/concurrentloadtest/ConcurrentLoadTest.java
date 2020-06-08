@@ -26,7 +26,11 @@ public class ConcurrentLoadTest {
     }
 
     private void sleep() throws InterruptedException {
-        Thread.sleep(500);
+        Thread.sleep(200);
+    }
+
+    private void sleep(int botsNum) throws InterruptedException {
+        Thread.sleep(200 + botsNum * 20);
     }
 
     private TestClient newBot(TestClientFactory botFactory) throws InterruptedException {
@@ -41,9 +45,14 @@ public class ConcurrentLoadTest {
         log("Bots number: " + botsNum);
 
         log("Connect bots");
-        for (int i = 0; i < botsNum; i++) bots.add(newBot(botFactory));
         TestClient chatObserver = newBot(botFactory);
         sleep();
+        for (int i = 0; i < botsNum; i++) bots.add(newBot(botFactory));
+        sleep(botsNum);
+
+        log("Send setTyping");
+        for (TestClient bot : bots) bot.getChat().sendSetTyping();
+        sleep(botsNum);
 
         log("Send messages");
         List<String> messagesList = new ArrayList<>();
@@ -51,9 +60,8 @@ public class ConcurrentLoadTest {
             String msg = UUID.randomUUID().toString();
             bot.getChat().sendMsg(msg);
             messagesList.add(msg);
-            Thread.sleep(10);
         }
-        sleep();
+        sleep(botsNum);
 
         log("Make assertions");
         Supplier<Stream<User>> users = () -> Stream.concat(Stream.of(chatObserver), bots.stream()).map(TestClient::getChat).map(MockChatClient::getUser);
@@ -62,16 +70,21 @@ public class ConcurrentLoadTest {
         bots.forEach(bot -> {
             MockChatClient chat = bot.getChat();
             Map<String, List<ServerMessage>> msgMap = chat.getServerMessages().stream()
-                    .collect(HashMap::new, (m, v) -> m.merge(v.getType(), Stream.of(v).collect(Collectors.toList()), (a, n) -> {
-                        a.addAll(n);
-                        return a;
-                    }), Map::putAll);
+                    .collect(HashMap::new, (m, v) -> m.merge(v.getType(), Stream.of(v).collect(Collectors.toList()),
+                            (a, n) -> {
+                                a.addAll(n);
+                                return a;
+                            }), Map::putAll);
             log(chat.getUser().getNick() + ": " + msgMap.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue().size()).collect(Collectors.joining(", ", "{", "}")));
             Assert.assertEquals("A server greeting was received", 1, msgMap.get("snapshot").size());
+
+            List<String> actualSetTypingList = msgMap.get("setTyping").stream().map(ServerMessage::getClient).map(ChatClient::getNick).collect(Collectors.toList());
+            List<String> expectedSetTypingList = bots.stream().map(b -> b.getChat().getUser().getNick()).collect(Collectors.toList());
+            Assert.assertTrue("All setTyping messages were received", actualSetTypingList.containsAll(expectedSetTypingList));
+
             List<String> actualMsgList = msgMap.get("msg").stream().map(ServerMessage::getPayload).collect(Collectors.toList());
-//            if (!actualMsgList.containsAll(messagesList))
-//                chat.getServerMessages().forEach(System.out::println);
             Assert.assertTrue("All messages were received", actualMsgList.containsAll(messagesList));
+
             Set<String> actualUserNicksList = chat.getChatClients().stream().map(ChatClient::getNick).collect(Collectors.toSet());
             Set<String> actualUserIdsList = chat.getChatClients().stream().map(ChatClient::getClientId).collect(Collectors.toSet());
             Assert.assertEquals("All nicks were visible", userNicksList, actualUserNicksList);
@@ -80,7 +93,7 @@ public class ConcurrentLoadTest {
 
         log("Disconnect bots");
         for (TestClient bot : bots) bot.close();
-        sleep();
+        sleep(botsNum);
 
         Set<String> actualClients = chatObserver.getChat().getChatClients().stream().map(ChatClient::getNick).collect(Collectors.toSet());
         Assert.assertEquals("Exactly one client is visible", actualClients.size(), 1);
@@ -105,8 +118,8 @@ public class ConcurrentLoadTest {
 
     @Test
     public void test_50_bots() throws InterruptedException {
-        spawnBots(50, wsBotFactory);
         spawnBots(50, reactorBotFactory);
+        spawnBots(50, wsBotFactory);
     }
 
     @Test

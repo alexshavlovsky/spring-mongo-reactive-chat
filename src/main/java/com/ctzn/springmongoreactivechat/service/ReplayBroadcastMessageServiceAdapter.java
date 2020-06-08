@@ -3,30 +3,27 @@ package com.ctzn.springmongoreactivechat.service;
 import com.ctzn.springmongoreactivechat.domain.Message;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
-import reactor.core.publisher.Mono;
-import reactor.core.publisher.ReplayProcessor;
+import reactor.core.publisher.*;
 
 @Service
 @Profile("replay-service")
 public class ReplayBroadcastMessageServiceAdapter implements BroadcastMessageService {
 
-    private FluxProcessor<Message, Message> chatMessageHistory;
+    private final ReplayProcessor<Message> processor = ReplayProcessor.create(50);
+    private final FluxSink<Message> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
 
     public ReplayBroadcastMessageServiceAdapter() {
-        chatMessageHistory = ReplayProcessor.create(50);
-        chatMessageHistory.onNext(Message.newInfo("Service started"));
+        sink.next(Message.newInfo("Service started"));
     }
 
     @Override
     public Flux<Message> getTopic() {
-        return chatMessageHistory;
+        return processor;
     }
 
     @Override
     public Mono<Message> saveMessage(Message message) {
-        chatMessageHistory.onNext(message);
+        sink.next(message);
         return Mono.just(message);
     }
 }
