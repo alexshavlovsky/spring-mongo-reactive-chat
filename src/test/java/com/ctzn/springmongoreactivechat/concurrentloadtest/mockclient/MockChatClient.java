@@ -1,10 +1,6 @@
 package com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-public interface MockChatClient {
+public interface MockChatClient extends ChatRecorder {
     User getUser();
 
     void sendHello();
@@ -24,8 +20,4 @@ public interface MockChatClient {
     String getSetTyping();
 
     void handleJson(String json);
-
-    Map<String, List<ServerMessage>> getMessageMap();
-
-    Collection<ChatClient> getChatClients();
 }

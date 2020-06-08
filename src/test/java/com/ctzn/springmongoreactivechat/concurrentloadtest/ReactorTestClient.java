@@ -8,7 +8,9 @@ import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClien
 import org.springframework.web.reactive.socket.client.WebSocketClient;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.ReplayProcessor;
+import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.UnicastProcessor;
 
 import java.net.URI;
 
@@ -18,16 +20,16 @@ class ReactorTestClient implements TestClient {
     private final WebSocketHandler handler;
     private final static WebSocketClient client = new ReactorNettyWebSocketClient();
     private Disposable disposable;
-    private final ReplayProcessor<String> out = ReplayProcessor.create();
+    private final FluxProcessor<String, String> out = UnicastProcessor.create();
     private final MockChatClientImpl chat = new MockChatClientImpl(out::onNext);
 
     private ReactorTestClient(URI uri, boolean autoGreeting) {
         this.uri = uri;
-        Flux<String> greeting = autoGreeting ? Flux.just(chat.getHello()) : Flux.empty();
-        handler = session -> session.send(greeting.concatWith(out).map(session::textMessage)).and(
-                session.receive().map(WebSocketMessage::getPayloadAsText)
-                        .doOnNext(chat::handleJson).then()
-        );
+        Flux<String> output = autoGreeting ? Flux.just(chat.getHello()).concatWith(out) : out;
+        handler = session -> Mono.zip(
+                session.receive().map(WebSocketMessage::getPayloadAsText).doOnNext(chat::handleJson).then(),
+                session.send(output.map(session::textMessage))
+        ).then();
     }
 
     static ReactorTestClient newInstance(String uri, boolean autoGreeting) {

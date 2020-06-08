@@ -1,8 +1,6 @@
 package com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -75,8 +73,8 @@ public class MockChatClientImpl implements MockChatClient {
     }
 
     @Override
-    public Map<String, List<ServerMessage>> getMessageMap() {
-        return messageHandler.getMessageMap();
+    public Collection<ServerMessage> getServerMessages() {
+        return messageHandler.getServerMessages();
     }
 
     @Override

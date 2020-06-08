@@ -61,10 +61,16 @@ public class ConcurrentLoadTest {
         Set<String> userIdsList = users.get().map(User::getId).collect(Collectors.toSet());
         bots.forEach(bot -> {
             MockChatClient chat = bot.getChat();
-            Map<String, List<ServerMessage>> msgMap = chat.getMessageMap();
+            Map<String, List<ServerMessage>> msgMap = chat.getServerMessages().stream()
+                    .collect(HashMap::new, (m, v) -> m.merge(v.getType(), Stream.of(v).collect(Collectors.toList()), (a, n) -> {
+                        a.addAll(n);
+                        return a;
+                    }), Map::putAll);
             log(chat.getUser().getNick() + ": " + msgMap.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue().size()).collect(Collectors.joining(", ", "{", "}")));
             Assert.assertEquals("A server greeting was received", 1, msgMap.get("snapshot").size());
             List<String> actualMsgList = msgMap.get("msg").stream().map(ServerMessage::getPayload).collect(Collectors.toList());
+//            if (!actualMsgList.containsAll(messagesList))
+//                chat.getServerMessages().forEach(System.out::println);
             Assert.assertTrue("All messages were received", actualMsgList.containsAll(messagesList));
             Set<String> actualUserNicksList = chat.getChatClients().stream().map(ChatClient::getNick).collect(Collectors.toSet());
             Set<String> actualUserIdsList = chat.getChatClients().stream().map(ChatClient::getClientId).collect(Collectors.toSet());

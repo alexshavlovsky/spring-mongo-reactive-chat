@@ -1,8 +1,9 @@
 package com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 class RecordingMessageHandlerImpl implements RecordingMessageHandler {
     private final Mapper mapper;
@@ -34,11 +35,7 @@ class RecordingMessageHandlerImpl implements RecordingMessageHandler {
     }
 
     @Override
-    public Map<String, List<ServerMessage>> getMessageMap() {
-        return serverMessages.stream()
-                .collect(HashMap::new, (m, v) -> m.merge(v.getType(), Stream.of(v).collect(Collectors.toList()), (a, n) -> {
-                    a.addAll(n);
-                    return a;
-                }), Map::putAll);
+    public Collection<ServerMessage> getServerMessages() {
+        return serverMessages;
     }
 }
