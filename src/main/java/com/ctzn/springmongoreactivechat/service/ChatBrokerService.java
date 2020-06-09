@@ -29,7 +29,7 @@ public class ChatBrokerService {
     private final Map<String, ChatClient> clients = new HashMap<>();
     private int snapshotVersion = 0;
 
-    public ReplayProcessor<Message> getBroadcastTopic() {
+    public ReplayProcessor<Message> getTopic() {
         return processor;
     }
 

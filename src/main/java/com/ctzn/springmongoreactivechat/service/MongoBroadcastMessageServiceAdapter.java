@@ -11,15 +11,17 @@ import reactor.core.publisher.Mono;
 @Service
 @Profile("mongo-service")
 public class MongoBroadcastMessageServiceAdapter implements BroadcastMessageService {
-    private ReactiveMongoOperations mongo;
+    private final ReactiveMongoOperations mongo;
+    private final Flux<Message> cache;
 
     public MongoBroadcastMessageServiceAdapter(ReactiveMongoOperations mongo) {
         this.mongo = mongo;
+        cache = mongo.tail(new BasicQuery("{}"), Message.class).cache(50);
     }
 
     @Override
     public Flux<Message> getTopic() {
-        return mongo.tail(new BasicQuery("{}"), Message.class);
+        return cache;
     }
 
     @Override

@@ -14,6 +14,7 @@ public class DomainMapper {
         try {
             return mapper.writeValueAsString(object);
         } catch (Exception e) {
+            e.printStackTrace();
             return "{}";
         }
     }

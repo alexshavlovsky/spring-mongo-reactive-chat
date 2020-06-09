@@ -67,16 +67,18 @@ public class MessageHandler implements WebSocketHandler {
                             LOG.error(e.getMessage());
                             return Mono.error(e);
                     }
-                    return Mono.just(userMessage);
+                    return Mono.empty();
                 })
                 .then();
 
         Flux<String> source = incoming.transform(parseGreetingAndTransform(f -> f)).next().take(Duration.ofSeconds(5))
                 .flatMapMany(message ->
                         chatBroker.addClient(message.getUser().toChatClient(sessionId), LOG)
-                                .concatWith(chatBroker.getBroadcastTopic()
-                                        .mergeWith(broadcastMessageService.getTopic())
-                                        .mergeWith(directBroadcastService.getTopic()))
+                                .concatWith(Flux.merge(
+                                        chatBroker.getTopic(),
+                                        broadcastMessageService.getTopic(),
+                                        directBroadcastService.getTopic()
+                                ))
                                 .map(mapper::toJson)
                                 .doOnNext(json -> LOG.trace("==>{}", json))
                                 .doFinally(sig -> chatBroker.removeClient(sessionId, LOG))

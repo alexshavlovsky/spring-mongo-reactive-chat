@@ -9,6 +9,7 @@ class Mapper {
         try {
             return mapper.writeValueAsString(object);
         } catch (Exception e) {
+            e.printStackTrace();
             return "{}";
         }
     }
@@ -17,6 +18,7 @@ class Mapper {
         try {
             return mapper.readValue(json, clazz);
         } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
     }

@@ -11,7 +11,7 @@ import reactor.core.publisher.FluxSink;
 @Service
 public class DirectBroadcastService {
 
-    final private EmitterProcessor<Message> processor = EmitterProcessor.create();
+    final private EmitterProcessor<Message> processor = EmitterProcessor.create(false);
     final private FluxSink<Message> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
 
     public Flux<Message> getTopic() {
