@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
 
 import java.net.URI;
+import java.util.concurrent.CountDownLatch;
 
 class ReactorTestClient implements TestClient {
 
@@ -23,6 +24,7 @@ class ReactorTestClient implements TestClient {
     private final UnicastProcessor<String> processor = UnicastProcessor.create();
     private final FluxSink<String> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
     private final MockChatClientImpl chat = new MockChatClientImpl(sink::next);
+    private final CountDownLatch disconnected = new CountDownLatch(1);
 
     private ReactorTestClient(URI uri, boolean autoGreeting) {
         this.uri = uri;
@@ -30,7 +32,7 @@ class ReactorTestClient implements TestClient {
         handler = session -> Mono.zip(
                 session.receive().map(WebSocketMessage::getPayloadAsText).doOnNext(chat::handleJson).then(),
                 session.send(output.map(session::textMessage))
-        ).then();
+        ).doFinally(sig -> disconnected.countDown()).then();
     }
 
     static ReactorTestClient newInstance(String uri, boolean autoGreeting) {
@@ -50,5 +52,10 @@ class ReactorTestClient implements TestClient {
     @Override
     public MockChatClient getChat() {
         return chat;
+    }
+
+    @Override
+    public boolean disconnected() {
+        return disconnected.getCount() == 0;
     }
 }

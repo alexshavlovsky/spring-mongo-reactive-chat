@@ -8,4 +8,6 @@ public interface TestClient {
     void close() throws InterruptedException;
 
     MockChatClient getChat();
+
+    boolean disconnected();
 }

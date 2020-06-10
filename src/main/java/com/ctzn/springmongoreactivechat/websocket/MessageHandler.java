@@ -9,6 +9,7 @@ import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
 import com.ctzn.springmongoreactivechat.service.DirectBroadcastService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.WebSocketSession;
@@ -22,6 +23,9 @@ import static com.ctzn.springmongoreactivechat.websocket.ClientStreamTransformer
 
 @Component
 public class MessageHandler implements WebSocketHandler {
+
+    @Value("${chat_client_greeting_timeout}")
+    int CLIENT_GREETING_TIMEOUT_MS;
 
     private final BroadcastMessageService broadcastMessageService;
     private final DirectBroadcastService directBroadcastService;
@@ -71,7 +75,7 @@ public class MessageHandler implements WebSocketHandler {
                 })
                 .then();
 
-        Flux<String> source = incoming.transform(parseGreetingAndTransform(f -> f)).next().take(Duration.ofSeconds(5))
+        Flux<String> source = incoming.transform(parseGreetingAndTransform(f -> f)).next().take(Duration.ofMillis(CLIENT_GREETING_TIMEOUT_MS))
                 .flatMapMany(message ->
                         chatBroker.addClient(message.getUser().toChatClient(sessionId), LOG)
                                 .concatWith(Flux.merge(

@@ -57,4 +57,9 @@ class WsTestClient implements TestClient {
     public MockChatClient getChat() {
         return chat;
     }
+
+    @Override
+    public boolean disconnected() {
+        return webSocketClient.isClosed();
+    }
 }
