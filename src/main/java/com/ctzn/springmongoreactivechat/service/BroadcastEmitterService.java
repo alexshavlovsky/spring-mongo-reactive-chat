@@ -9,7 +9,7 @@ import reactor.core.publisher.FluxSink;
 // this publisher is neither persistent, nor replay
 // it can be used for non-essential auxiliary messages such as a setTyping message
 @Service
-public class DirectBroadcastService {
+public class BroadcastEmitterService {
 
     final private EmitterProcessor<Message> processor = EmitterProcessor.create(false);
     final private FluxSink<Message> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
