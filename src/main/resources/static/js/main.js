@@ -21,9 +21,8 @@ let frameID = 0;
 function sendTypedMessage(type, payload) {
     wsClient.send(JSON.stringify({
         frameId: frameID++,
+        user: {id: CLIENT_ID, nick: CLIENT_ID.slice(0, 8)},
         type,
-        clientId: CLIENT_ID,
-        nick: CLIENT_ID.slice(0,8),
         payload
     }));
 }
@@ -51,25 +50,24 @@ function wsDispatcher(event) {
         let time = new Date(json.timestamp);
         json.ago = (Date.now() - time) / 1000;
         json.time = ("0" + time.getHours()).slice(-2) + ":" + ("0" + time.getMinutes()).slice(-2) + ":" + ("0" + time.getSeconds()).slice(-2);
-        console.log(json);
         if (json.type === 'snapshot') {
             snapshot = JSON.parse(json.payload);
             users_list.clear();
-            snapshot.users.forEach(c => users_list.set(c.sessionId, c.nick));
+            snapshot.clients.forEach(c => users_list.set(c.sessionId, c.nick));
             redrawUsersList();
         }
         if (json.type === 'snapshotUpdate') {
             let update = JSON.parse(json.payload);
-            if (update.snapshotVer >= snapshot.snapshotVer) {
-                let user = update.user;
-                if (update.type === 'addUser') users_list.set(user.sessionId, user.nick);
-                if (update.type === 'removeUser') users_list.delete(user.sessionId);
+            if (update.version >= snapshot.version) {
+                let client = update.client;
+                if (update.type === 'addUser' || update.type === 'updateUser') users_list.set(client.sessionId, client.nick);
+                if (update.type === 'removeUser') users_list.delete(client.sessionId);
                 redrawUsersList();
             }
         }
         if (json.type === 'info') adaptInfo(json.time + ' ' + json.payload);
         if (json.type === 'error') adaptError(json.time + ' ' + json.payload);
-        if (json.type === 'msg') adaptMsg(CLIENT_ID !== json.clientId, json.time, json.ago, json.nick, json.payload);
+        if (json.type === 'msg') adaptMsg(CLIENT_ID !== json.client.clientId, json.time, json.ago, json.client.nick, json.payload);
         return;
     } catch (e) {
         adaptError('Error while parsing backend message: ' + e);
