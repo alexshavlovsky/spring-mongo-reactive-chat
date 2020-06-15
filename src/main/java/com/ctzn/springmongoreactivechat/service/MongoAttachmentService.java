@@ -1,15 +1,13 @@
 package com.ctzn.springmongoreactivechat.service;
 
 import org.reactivestreams.Publisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
+import org.springframework.data.mongodb.gridfs.ReactiveGridFsResource;
 import org.springframework.data.mongodb.gridfs.ReactiveGridFsTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
@@ -17,17 +15,13 @@ import reactor.util.function.Tuples;
 
 import java.util.function.Function;
 
-import static com.ctzn.springmongoreactivechat.service.HttpUtil.newHttpError;
 import static com.ctzn.springmongoreactivechat.service.MongoUtil.countDocuments;
-import static com.ctzn.springmongoreactivechat.service.MongoUtil.logDownloadProgress;
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
 
 @Service
 @Profile("mongo-grid-attachments")
 public class MongoAttachmentService extends AttachmentService {
-
-    private Logger LOG = LoggerFactory.getLogger(MongoAttachmentService.class);
 
     private ReactiveGridFsTemplate gridFsTemplate;
     private ReactiveMongoOperations mongo;
@@ -56,14 +50,15 @@ public class MongoAttachmentService extends AttachmentService {
     }
 
     @Override
-    Function<Mono<String>, Publisher<String>> loadAttachmentByIdHandler(ServerWebExchange exchange) {
-        return fileIdMono -> fileIdMono.flatMap(fileId -> gridFsTemplate
+    int getBufferSize() {
+        return 256 * 1024;
+    }
+
+    @Override
+    public Flux<DataBuffer> getAttachmentById(String fileId) {
+        return gridFsTemplate
                 .findOne(query(where("_id").is(fileId)))
                 .flatMap(gridFsTemplate::getResource)
-                .flatMap(resource -> exchange.getResponse().writeWith(resource.getDownloadStream()
-                        .transform(logDownloadProgress(LOG, exchange, fileId, 256 * 1024))
-                ).thenReturn(fileId))
-                .switchIfEmpty(newHttpError(LOG, exchange, HttpStatus.NOT_FOUND, "File does not exist: " + fileId))
-        );
+                .flatMapMany(ReactiveGridFsResource::getDownloadStream);
     }
 }

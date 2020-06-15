@@ -46,6 +46,7 @@ Component                      | Technology
 Backend engine                 | Spring Boot WebFlux
 Database                       | Reactive MongoDB
 Protocol                       | Reactive WebSockets
+Server side thumbnails         | [Thumbnailator - a thumbnail generation library for Java](https://github.com/coobird/thumbnailator) 
 Frontend engine                | Pure JS + WebSockets + Bootstrap
 or (see description)           | Angular 9 + PrimeNG
 

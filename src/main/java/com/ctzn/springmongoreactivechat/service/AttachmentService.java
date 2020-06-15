@@ -3,6 +3,7 @@ package com.ctzn.springmongoreactivechat.service;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.server.ServerWebExchange;
@@ -15,6 +16,7 @@ import java.util.function.Function;
 
 import static com.ctzn.springmongoreactivechat.service.HttpUtil.getRemoteHost;
 import static com.ctzn.springmongoreactivechat.service.HttpUtil.newHttpError;
+import static com.ctzn.springmongoreactivechat.service.MongoUtil.logDownloadProgress;
 
 public abstract class AttachmentService {
 
@@ -35,7 +37,18 @@ public abstract class AttachmentService {
     abstract Function<Flux<FilePart>, Publisher<Tuple2<String, String>>> saveAttachmentsHandler();
 
     // loads an attachment by id and returns an id
-    abstract Function<Mono<String>, Publisher<String>> loadAttachmentByIdHandler(ServerWebExchange exchange);
+    private Function<Mono<String>, Publisher<String>> loadAttachmentByIdHandler(ServerWebExchange exchange) {
+        return fileIdMono -> fileIdMono.flatMap(
+                fileId -> exchange.getResponse()
+                        .writeWith(getAttachmentById(fileId).transform(logDownloadProgress(LOG, exchange, fileId, getBufferSize())))
+                        .thenReturn(fileId)
+                        .switchIfEmpty(newHttpError(LOG, exchange, HttpStatus.NOT_FOUND, "File does not exist: " + fileId))
+        );
+    }
+
+    abstract int getBufferSize();
+
+    public abstract Flux<DataBuffer> getAttachmentById(String fileId);
 
     // handles all attachments and returns a list of ids
     public Mono<Map<String, String>> saveAttachments(Flux<FilePart> parts, ServerWebExchange exchange) {
@@ -58,6 +71,6 @@ public abstract class AttachmentService {
         return parseRequestParameterByKey(exchange, FORM_DATA_FILE_ID_KEY)
                 .transform(loadAttachmentByIdHandler(exchange))
                 .doOnNext(fileId -> LOG.info("f->[{}] {} OK", getRemoteHost(exchange), fileId))
-                .flatMap(fileId -> Mono.empty());
+                .then();
     }
 }
