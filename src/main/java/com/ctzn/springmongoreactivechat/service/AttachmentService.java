@@ -40,9 +40,10 @@ public abstract class AttachmentService {
     private Function<Mono<String>, Publisher<String>> loadAttachmentByIdHandler(ServerWebExchange exchange) {
         return fileIdMono -> fileIdMono.flatMap(
                 fileId -> exchange.getResponse()
-                        .writeWith(getAttachmentById(fileId).transform(logDownloadProgress(LOG, exchange, fileId, getBufferSize())))
-                        .thenReturn(fileId)
-                        .switchIfEmpty(newHttpError(LOG, exchange, HttpStatus.NOT_FOUND, "File does not exist: " + fileId))
+                        .writeWith(getAttachmentById(fileId)
+                                .transform(logDownloadProgress(LOG, exchange, fileId, getBufferSize()))
+                                .switchIfEmpty(newHttpError(LOG, exchange, HttpStatus.NOT_FOUND, "File does not exist: " + fileId))
+                        ).thenReturn(fileId)
         );
     }
 
