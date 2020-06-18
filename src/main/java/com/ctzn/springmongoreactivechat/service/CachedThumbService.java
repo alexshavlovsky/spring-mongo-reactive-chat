@@ -8,6 +8,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Mono;
 
+import java.io.IOException;
+
 public abstract class CachedThumbService implements ThumbsService {
 
     private Logger LOG = LoggerFactory.getLogger(CachedThumbService.class);
@@ -19,12 +21,12 @@ public abstract class CachedThumbService implements ThumbsService {
 
     @Override
     @Cacheable(value = "thumbs", key = "#fileId")
-    public byte[] getThumb(String fileId, DataBuffer dataBuffer) throws Exception {
-        LOG.info("Generate thumbnail of {}", fileId);
-        return generateThumb(dataBuffer);
+    public byte[] getThumb(String fileId, String thumbType, DataBuffer dataBuffer) throws IOException {
+        LOG.info("Generate {} thumbnail of {}", thumbType, fileId);
+        return generateThumb(thumbType, dataBuffer);
     }
 
-    abstract byte[] generateThumb(DataBuffer dataBuffer) throws Exception;
+    abstract byte[] generateThumb(String thumbType, DataBuffer dataBuffer) throws IOException;
 
     @Override
     public Mono<byte[]> getCachedOrGenerate(String fileId, Mono<byte[]> thumbPublisher) {
