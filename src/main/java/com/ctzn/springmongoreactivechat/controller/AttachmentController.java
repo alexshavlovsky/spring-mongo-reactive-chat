@@ -46,19 +46,15 @@ public class AttachmentController {
     public Mono<Void> getImageThumbByFileId(@PathVariable String fileId, @PathVariable String thumbType, ServerWebExchange exchange) {
         exchange.getResponse().getHeaders().setContentType(thumbsService.getMediaType());
         return exchange.getResponse().writeWith(
-                thumbsService
-                        .getCachedOrGenerate(fileId,
-                                Mono.defer(() -> DataBufferUtils
-                                        .join(attachmentService.getAttachmentById(fileId))
-                                        .flatMap(dataBuffer -> {
-                                            try {
-                                                return Mono.just(thumbsService.getThumb(fileId, thumbType, dataBuffer));
-                                            } catch (Exception e) {
-                                                return Mono.error(e);
-                                            }
-                                        })
-                                )
-                        )
+                DataBufferUtils
+                        .join(attachmentService.getAttachmentById(fileId))
+                        .flatMap(dataBuffer -> {
+                            try {
+                                return Mono.just(thumbsService.getThumb(fileId, thumbType, dataBuffer));
+                            } catch (Exception e) {
+                                return Mono.error(e);
+                            }
+                        })
                         .map(bytes -> exchange.getResponse().bufferFactory().wrap(bytes))
                         .doOnNext(dataBuffer -> LOG.info("thumb->[{}] {} OK", getRemoteHost(exchange), fileId))
         );

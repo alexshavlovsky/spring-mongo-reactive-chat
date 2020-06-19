@@ -5,7 +5,6 @@ import com.sun.pdfview.PDFPage;
 import net.coobird.thumbnailator.Thumbnails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.CacheManager;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -16,16 +15,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 @Service
-public class ThumbsServiceJpg240x240 extends CachedThumbService {
+public class ThumbsServiceJpg240x240 implements ThumbsService {
 
     private Logger LOG = LoggerFactory.getLogger(ThumbsServiceJpg240x240.class);
 
-    public ThumbsServiceJpg240x240(CacheManager cacheManager) {
-        super(cacheManager);
-    }
-
     @Override
-    byte[] generateThumb(String thumbType, DataBuffer dataBuffer) throws IOException {
+    public byte[] getThumb(String fileId, String thumbType, DataBuffer dataBuffer) throws IOException {
+        LOG.info("Generate {} thumbnail of {}", thumbType, fileId);
         ByteArrayOutputStream arrayBuffer = new ByteArrayOutputStream();
         if ("pdf".equals(thumbType)) {
             BufferedImage page = pdfAsImage(dataBuffer);
