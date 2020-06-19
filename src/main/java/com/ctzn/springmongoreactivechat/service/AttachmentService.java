@@ -42,7 +42,7 @@ public abstract class AttachmentService {
                 fileId -> exchange.getResponse()
                         .writeWith(getAttachmentById(fileId)
                                 .transform(logDownloadProgress(LOG, exchange, fileId, getBufferSize()))
-                                .switchIfEmpty(newHttpError(LOG, exchange, HttpStatus.NOT_FOUND, "File does not exist: " + fileId))
+                                .switchIfEmpty(newHttpError(LOG, exchange, HttpStatus.NOT_FOUND, "file", "File does not exist: " + fileId))
                         ).thenReturn(fileId)
         );
     }
@@ -55,7 +55,7 @@ public abstract class AttachmentService {
     public Mono<Map<String, String>> saveAttachments(Flux<FilePart> parts, ServerWebExchange exchange) {
         return parts
                 .transform(saveAttachmentsHandler())
-                .doOnNext(tuple -> LOG.info("<-f[{}] {} as {}", getRemoteHost(exchange), tuple.getT1(), tuple.getT2()))
+                .doOnNext(tuple -> LOG.info("<-file[{}] {} as {}", getRemoteHost(exchange), tuple.getT1(), tuple.getT2()))
                 .collectMap(Tuple2::getT1, Tuple2::getT2);
     }
 
@@ -63,7 +63,7 @@ public abstract class AttachmentService {
     private Mono<String> parseRequestParameterByKey(ServerWebExchange exchange, String key) {
         return exchange.getFormData().flatMap(formData -> formData.containsKey(key) ?
                 Mono.just(formData.getFirst(key)) :
-                newHttpError(LOG, exchange, HttpStatus.BAD_REQUEST, "Form field is required: " + key)
+                newHttpError(LOG, exchange, HttpStatus.BAD_REQUEST, "", "Form field is required: " + key)
         );
     }
 
@@ -71,7 +71,7 @@ public abstract class AttachmentService {
     public Mono<Void> loadAttachmentById(ServerWebExchange exchange) {
         return parseRequestParameterByKey(exchange, FORM_DATA_FILE_ID_KEY)
                 .transform(loadAttachmentByIdHandler(exchange))
-                .doOnNext(fileId -> LOG.info("f->[{}] {} OK", getRemoteHost(exchange), fileId))
+                .doOnNext(fileId -> LOG.info("file->[{}] {} OK", getRemoteHost(exchange), fileId))
                 .then();
     }
 }

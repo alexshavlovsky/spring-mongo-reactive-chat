@@ -48,7 +48,7 @@ Database                       | Reactive MongoDB
 Protocol                       | Reactive WebSockets
 Server side thumbnails         | [Thumbnailator - a thumbnail generation library for Java](https://github.com/coobird/thumbnailator)
 PDF documents thumbnails       | [PDF renderer - Java library for rendering PDF documents](https://github.com/katjas/PDFrenderer)
-Caching                        | Spring cache 
+Caching                        | Caffeine + Reactor wrappers 
 Frontend engine                | Pure JS + WebSockets + Bootstrap
 or (see description)           | Angular 9 + PrimeNG
 

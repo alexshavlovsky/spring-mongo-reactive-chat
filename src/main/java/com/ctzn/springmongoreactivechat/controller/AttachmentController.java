@@ -4,6 +4,7 @@ import com.ctzn.springmongoreactivechat.service.AttachmentService;
 import com.ctzn.springmongoreactivechat.service.ThumbsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 
 import static com.ctzn.springmongoreactivechat.service.HttpUtil.getRemoteHost;
+import static com.ctzn.springmongoreactivechat.service.HttpUtil.newHttpError;
 
 @RestController
 @CrossOrigin
@@ -45,9 +47,10 @@ public class AttachmentController {
     public Mono<Void> getImageThumbByFileId(@PathVariable String fileId, @PathVariable String thumbType, ServerWebExchange exchange) {
         exchange.getResponse().getHeaders().setContentType(thumbsService.getMediaType());
         return exchange.getResponse().writeWith(
-                thumbsService.getThumb(fileId, thumbType)
+                thumbsService.getThumb(new ThumbsService.ThumbKey(fileId, thumbType))
                         .map(bytes -> exchange.getResponse().bufferFactory().wrap(bytes))
                         .doOnNext(dataBuffer -> LOG.info("thumb->[{}] {} OK", getRemoteHost(exchange), fileId))
+                        .onErrorResume(e -> newHttpError(LOG, exchange, HttpStatus.UNPROCESSABLE_ENTITY, "thumb", e.getMessage()))
         );
     }
 }
