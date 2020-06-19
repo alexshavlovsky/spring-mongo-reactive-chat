@@ -1,12 +1,10 @@
 package com.ctzn.springmongoreactivechat.service;
 
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.MediaType;
-
-import java.io.IOException;
+import reactor.core.publisher.Mono;
 
 public interface ThumbsService {
-    byte[] getThumb(String fileId, String thumbType, DataBuffer dataBuffer) throws IOException;
-
     MediaType getMediaType();
+
+    Mono<byte[]> getThumb(String fileId, String thumbType);
 }

@@ -4,7 +4,6 @@ import com.ctzn.springmongoreactivechat.service.AttachmentService;
 import com.ctzn.springmongoreactivechat.service.ThumbsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
@@ -46,15 +45,7 @@ public class AttachmentController {
     public Mono<Void> getImageThumbByFileId(@PathVariable String fileId, @PathVariable String thumbType, ServerWebExchange exchange) {
         exchange.getResponse().getHeaders().setContentType(thumbsService.getMediaType());
         return exchange.getResponse().writeWith(
-                DataBufferUtils
-                        .join(attachmentService.getAttachmentById(fileId))
-                        .flatMap(dataBuffer -> {
-                            try {
-                                return Mono.just(thumbsService.getThumb(fileId, thumbType, dataBuffer));
-                            } catch (Exception e) {
-                                return Mono.error(e);
-                            }
-                        })
+                thumbsService.getThumb(fileId, thumbType)
                         .map(bytes -> exchange.getResponse().bufferFactory().wrap(bytes))
                         .doOnNext(dataBuffer -> LOG.info("thumb->[{}] {} OK", getRemoteHost(exchange), fileId))
         );

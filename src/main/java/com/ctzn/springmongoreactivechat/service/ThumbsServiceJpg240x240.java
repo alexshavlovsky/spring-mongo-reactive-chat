@@ -6,8 +6,10 @@ import net.coobird.thumbnailator.Thumbnails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -19,9 +21,32 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
 
     private Logger LOG = LoggerFactory.getLogger(ThumbsServiceJpg240x240.class);
 
+    private AttachmentService attachmentService;
+
+    public ThumbsServiceJpg240x240(AttachmentService attachmentService) {
+        this.attachmentService = attachmentService;
+    }
+
     @Override
-    public byte[] getThumb(String fileId, String thumbType, DataBuffer dataBuffer) throws IOException {
-        LOG.info("Generate {} thumbnail of {}", thumbType, fileId);
+    public MediaType getMediaType() {
+        return MediaType.IMAGE_JPEG;
+    }
+
+    @Override
+    public Mono<byte[]> getThumb(String fileId, String thumbType) {
+        return DataBufferUtils
+                .join(attachmentService.getAttachmentById(fileId))
+                .flatMap(dataBuffer -> {
+                    try {
+                        return Mono.just(generateThumb(thumbType, dataBuffer));
+                    } catch (IOException e) {
+                        return Mono.error(e);
+                    }
+                });
+    }
+
+    private byte[] generateThumb(String thumbType, DataBuffer dataBuffer) throws IOException {
+        System.out.println("Expensive");
         ByteArrayOutputStream arrayBuffer = new ByteArrayOutputStream();
         if ("pdf".equals(thumbType)) {
             BufferedImage page = pdfAsImage(dataBuffer);
@@ -32,11 +57,6 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
                     .size(240, 240).outputFormat("jpg").toOutputStream(arrayBuffer);
         }
         return arrayBuffer.toByteArray();
-    }
-
-    @Override
-    public MediaType getMediaType() {
-        return MediaType.IMAGE_JPEG;
     }
 
     private BufferedImage pdfAsImage(DataBuffer dataBuffer) {
