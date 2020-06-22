@@ -13,12 +13,12 @@ import reactor.core.publisher.Signal;
 import java.util.concurrent.TimeUnit;
 
 @Service
-@Qualifier("proxy")
-public class ThumbsServiceCaffeineCached implements ThumbsService {
+@Qualifier("proxy-caffeine-wrappers")
+public class ThumbsServiceCaffeineCachedWrappers implements ThumbsService {
 
     private ThumbsService thumbsService;
 
-    public ThumbsServiceCaffeineCached(@Qualifier("subject") ThumbsService thumbsService) {
+    public ThumbsServiceCaffeineCachedWrappers(@Qualifier("subject") ThumbsService thumbsService) {
         this.thumbsService = thumbsService;
     }
 
