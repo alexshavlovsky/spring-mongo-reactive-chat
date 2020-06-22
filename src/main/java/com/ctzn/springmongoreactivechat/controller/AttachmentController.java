@@ -29,7 +29,7 @@ public class AttachmentController {
     private ThumbsService thumbsService;
 
     public AttachmentController(AttachmentService attachmentService,
-                                @Qualifier("proxy-caffeine-pure") ThumbsService thumbsService) {
+                                @Qualifier("caffeine-caching-proxy") ThumbsService thumbsService) {
         this.attachmentService = attachmentService;
         this.thumbsService = thumbsService;
     }

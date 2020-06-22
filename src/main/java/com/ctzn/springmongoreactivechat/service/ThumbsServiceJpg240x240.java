@@ -52,7 +52,7 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
         Thumbnails.Builder builder = "pdf".equals(thumbType) ?
                 Thumbnails.of(pdfAsImage(dataBuffer)) :
                 Thumbnails.of(dataBuffer.asInputStream(true));
-        builder.size(240, 240).outputFormat("jpg").toOutputStream(arrayBuffer);
+        builder.size(240, 240).outputFormat("JPEG").outputQuality(0.9).toOutputStream(arrayBuffer);
         return arrayBuffer.toByteArray();
     }
 
