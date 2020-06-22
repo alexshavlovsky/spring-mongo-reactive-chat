@@ -4,6 +4,7 @@ import com.ctzn.springmongoreactivechat.service.AttachmentService;
 import com.ctzn.springmongoreactivechat.service.ThumbsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
@@ -27,7 +28,7 @@ public class AttachmentController {
     private AttachmentService attachmentService;
     private ThumbsService thumbsService;
 
-    public AttachmentController(AttachmentService attachmentService, ThumbsService thumbsService) {
+    public AttachmentController(AttachmentService attachmentService, @Qualifier("proxy") ThumbsService thumbsService) {
         this.attachmentService = attachmentService;
         this.thumbsService = thumbsService;
     }
