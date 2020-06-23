@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.service;
+package com.ctzn.springmongoreactivechat.service.messages;
 
 import com.ctzn.springmongoreactivechat.domain.Message;
 import org.springframework.context.annotation.Profile;

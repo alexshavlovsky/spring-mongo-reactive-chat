@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.service;
+package com.ctzn.springmongoreactivechat.service.attachments;
 
 import org.reactivestreams.Publisher;
 import org.springframework.context.annotation.Profile;

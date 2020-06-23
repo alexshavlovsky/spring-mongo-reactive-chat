@@ -3,7 +3,7 @@ package com.ctzn.springmongoreactivechat.websocket;
 import com.ctzn.springmongoreactivechat.domain.DomainMapper;
 import com.ctzn.springmongoreactivechat.domain.dto.IncomingMessage;
 import com.ctzn.springmongoreactivechat.service.BroadcastEmitterService;
-import com.ctzn.springmongoreactivechat.service.BroadcastMessageService;
+import com.ctzn.springmongoreactivechat.service.messages.BroadcastMessageService;
 import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

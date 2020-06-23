@@ -5,7 +5,7 @@ import com.ctzn.springmongoreactivechat.domain.Message;
 import com.ctzn.springmongoreactivechat.domain.dto.ChatClient;
 import com.ctzn.springmongoreactivechat.domain.dto.IncomingMessage;
 import com.ctzn.springmongoreactivechat.service.BroadcastEmitterService;
-import com.ctzn.springmongoreactivechat.service.BroadcastMessageService;
+import com.ctzn.springmongoreactivechat.service.messages.BroadcastMessageService;
 import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;

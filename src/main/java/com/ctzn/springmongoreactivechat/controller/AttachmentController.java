@@ -1,7 +1,7 @@
 package com.ctzn.springmongoreactivechat.controller;
 
-import com.ctzn.springmongoreactivechat.service.AttachmentService;
-import com.ctzn.springmongoreactivechat.service.ThumbsService;
+import com.ctzn.springmongoreactivechat.service.attachments.AttachmentService;
+import com.ctzn.springmongoreactivechat.service.thumbs.ThumbsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;

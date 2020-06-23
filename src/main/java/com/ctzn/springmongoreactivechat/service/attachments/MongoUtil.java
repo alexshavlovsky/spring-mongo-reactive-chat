@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.service;
+package com.ctzn.springmongoreactivechat.service.attachments;
 
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;

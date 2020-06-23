@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.service;
+package com.ctzn.springmongoreactivechat.service.attachments;
 
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -16,7 +16,7 @@ import java.util.function.Function;
 
 import static com.ctzn.springmongoreactivechat.service.HttpUtil.getRemoteHost;
 import static com.ctzn.springmongoreactivechat.service.HttpUtil.newHttpError;
-import static com.ctzn.springmongoreactivechat.service.MongoUtil.logDownloadProgress;
+import static com.ctzn.springmongoreactivechat.service.attachments.MongoUtil.logDownloadProgress;
 
 public abstract class AttachmentService {
 

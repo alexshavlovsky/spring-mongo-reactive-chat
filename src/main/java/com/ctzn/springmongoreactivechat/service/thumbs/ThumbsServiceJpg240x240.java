@@ -1,5 +1,6 @@
-package com.ctzn.springmongoreactivechat.service;
+package com.ctzn.springmongoreactivechat.service.thumbs;
 
+import com.ctzn.springmongoreactivechat.service.attachments.AttachmentService;
 import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFPage;
 import net.coobird.thumbnailator.Thumbnails;

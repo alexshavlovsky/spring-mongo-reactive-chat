@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.service;
+package com.ctzn.springmongoreactivechat.service.attachments;
 
 import org.reactivestreams.Publisher;
 import org.springframework.context.annotation.Profile;
@@ -15,7 +15,7 @@ import reactor.util.function.Tuples;
 
 import java.util.function.Function;
 
-import static com.ctzn.springmongoreactivechat.service.MongoUtil.countDocuments;
+import static com.ctzn.springmongoreactivechat.service.attachments.MongoUtil.countDocuments;
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
 

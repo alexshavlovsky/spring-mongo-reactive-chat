@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.service;
+package com.ctzn.springmongoreactivechat.service.thumbs;
 
 import org.springframework.http.MediaType;
 import reactor.core.publisher.Mono;

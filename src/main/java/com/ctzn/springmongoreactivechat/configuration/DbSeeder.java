@@ -10,7 +10,7 @@ import org.springframework.data.mongodb.core.CollectionOptions;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import reactor.core.publisher.Mono;
 
-import static com.ctzn.springmongoreactivechat.service.MongoUtil.isMongoConnected;
+import static com.ctzn.springmongoreactivechat.service.attachments.MongoUtil.isMongoConnected;
 
 @Configuration
 @Profile("mongo-service")
