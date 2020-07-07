@@ -23,7 +23,7 @@ import java.util.function.Function;
 @Profile("file-system-attachments")
 public class FileSystemAttachmentService extends AttachmentService {
 
-    private final String STORAGE_FOLDER_PATH = "uploaded_files";
+    private final String STORAGE_FOLDER_PATH = "app_uploaded_files";
     private final Path uploadPath = Paths.get(STORAGE_FOLDER_PATH);
 
     public FileSystemAttachmentService() {

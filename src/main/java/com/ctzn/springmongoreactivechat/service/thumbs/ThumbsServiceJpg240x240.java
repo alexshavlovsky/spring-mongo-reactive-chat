@@ -12,11 +12,18 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import ws.schild.jave.MultimediaObject;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
+import java.io.*;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
+// TODO: This class is too large and needs to be refactored
 @Service
 @Qualifier("subject")
 public class ThumbsServiceJpg240x240 implements ThumbsService {
@@ -50,9 +57,17 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
 
     private byte[] generateThumb(String thumbType, DataBuffer dataBuffer) throws Exception {
         ByteArrayOutputStream arrayBuffer = new ByteArrayOutputStream();
-        Thumbnails.Builder builder = "pdf".equals(thumbType) ?
-                Thumbnails.of(pdfAsImage(dataBuffer)) :
-                Thumbnails.of(dataBuffer.asInputStream(true));
+        Thumbnails.Builder builder;
+        switch (thumbType) {
+            case "pdf":
+                builder = Thumbnails.of(pdfAsImage(dataBuffer));
+                break;
+            case "video":
+                builder = Thumbnails.of(videoAsImage(dataBuffer));
+                break;
+            default:
+                builder = Thumbnails.of(dataBuffer.asInputStream(true));
+        }
         builder.size(240, 240).outputFormat("JPEG").outputQuality(0.9).toOutputStream(arrayBuffer);
         return arrayBuffer.toByteArray();
     }
@@ -67,5 +82,31 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
         Graphics2D bufImageGraphics = bufferedImage.createGraphics();
         bufImageGraphics.drawImage(image, 0, 0, null);
         return bufferedImage;
+    }
+
+    private final String TEMP_FOLDER_PATH = "app_temp_folder";
+    private final Path tempPath = Paths.get(TEMP_FOLDER_PATH);
+
+    private InputStream videoAsImage(DataBuffer dataBuffer) throws Exception {
+        if (!Files.exists(tempPath)) Files.createDirectories(tempPath);
+        String randomFileName = UUID.randomUUID().toString();
+        File sourceFile = tempPath.resolve(randomFileName).toFile();
+        Path thumbPath = tempPath.resolve(randomFileName + ".jpg");
+        try (FileChannel fc = new FileOutputStream(sourceFile).getChannel()) {
+            fc.write(dataBuffer.asByteBuffer());
+        }
+        try {
+            MultimediaObject multimediaObject = new MultimediaObject(sourceFile);
+            long duration = multimediaObject.getInfo().getDuration();
+            ScreenExtractorTmp screenExtractor = new ScreenExtractorTmp();
+            screenExtractor.renderOneImage(multimediaObject, -1, -1, duration / 2, thumbPath.toFile(), 2, true);
+            if (Files.exists(thumbPath))
+                return new ByteArrayInputStream(Files.readAllBytes(thumbPath));
+            else
+                throw new RuntimeException("FFmpeg did not yield a screenshot image");
+        } finally {
+            if (sourceFile.exists()) sourceFile.delete();
+            if (Files.exists(thumbPath)) Files.delete(thumbPath);
+        }
     }
 }

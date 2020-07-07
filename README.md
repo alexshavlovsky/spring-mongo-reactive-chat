@@ -48,9 +48,10 @@ Database                       | Reactive MongoDB
 Protocol                       | Reactive WebSockets
 Server side thumbnails         | [Thumbnailator - a thumbnail generation library for Java](https://github.com/coobird/thumbnailator)
 PDF documents thumbnails       | [PDF renderer - Java library for rendering PDF documents](https://github.com/katjas/PDFrenderer)
-Caching                        | Caffeine + Reactor wrappers 
+Video files thumbnails         | [The JAVE (Java Audio Video Encoder) library is Java wrapper on the ffmpeg project](https://github.com/a-schild/jave2)
+Caching                        | Caffeine in-memory cache
 Frontend engine                | Pure JS + WebSockets + Bootstrap
-or (see description)           | Angular 9 + PrimeNG
+or (see description)           | Angular 10 + PrimeNG
 
 ## Chat protocol summary
 ```

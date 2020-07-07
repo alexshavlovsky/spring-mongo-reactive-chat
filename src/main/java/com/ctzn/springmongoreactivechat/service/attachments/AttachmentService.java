@@ -33,7 +33,11 @@ public abstract class AttachmentService {
                 LOG.info("Total attachments stored: {} MB in {} files", a[0], a[1]));
     }
 
-    // saves an attachment and returns an id
+    // saves an attachment and returns a tuple in which
+    // the first element T1 contains frontend fileId (a FormData filename actually)
+    // and the second element T2 contains fileId returned by an attachment service implementation
+    // so that this attachment can be addressed by this id and then this id can be stored in a ReachMessage
+    // object on the frontend side
     abstract Function<Flux<FilePart>, Publisher<Tuple2<String, String>>> saveAttachmentsHandler();
 
     // loads an attachment by id and returns an id
@@ -51,7 +55,7 @@ public abstract class AttachmentService {
 
     public abstract Flux<DataBuffer> getAttachmentById(String fileId);
 
-    // handles all attachments and returns a list of ids
+    // handles all attachments and returns a map containing entries of a FormData filename and a file id returned by an attachment service
     public Mono<Map<String, String>> saveAttachments(Flux<FilePart> parts, ServerWebExchange exchange) {
         return parts
                 .transform(saveAttachmentsHandler())

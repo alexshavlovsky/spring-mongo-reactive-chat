@@ -30,4 +30,4 @@ build/
 ### VS Code ###
 .vscode/
 
-uploaded_files/
+app_*/
