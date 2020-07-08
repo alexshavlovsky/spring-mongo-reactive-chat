@@ -12,6 +12,7 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import ws.schild.jave.FFMPEGLocator;
 import ws.schild.jave.MultimediaObject;
 
 import java.awt.*;
@@ -86,6 +87,7 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
 
     private final String TEMP_FOLDER_PATH = "app_temp_folder";
     private final Path tempPath = Paths.get(TEMP_FOLDER_PATH);
+    private final FFMPEGLocator locator = new CustomFfmpegLocator();
 
     private InputStream videoAsImage(DataBuffer dataBuffer) throws Exception {
         if (!Files.exists(tempPath)) Files.createDirectories(tempPath);
@@ -96,9 +98,9 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
             fc.write(dataBuffer.asByteBuffer());
         }
         try {
-            MultimediaObject multimediaObject = new MultimediaObject(sourceFile);
+            MultimediaObject multimediaObject = new MultimediaObject(sourceFile, locator);
             long duration = multimediaObject.getInfo().getDuration();
-            ScreenExtractorTmp screenExtractor = new ScreenExtractorTmp();
+            ScreenExtractorTmp screenExtractor = new ScreenExtractorTmp(locator);
             screenExtractor.renderOneImage(multimediaObject, -1, -1, duration / 2, thumbPath.toFile(), 2, true);
             if (Files.exists(thumbPath))
                 return new ByteArrayInputStream(Files.readAllBytes(thumbPath));

@@ -25,26 +25,22 @@ class ScreenExtractorTmp {
                 return super.readLine();
             }
         }
-
-        public void reinsertLine(String line) {
-            lines.add(0, line);
-        }
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(ScreenExtractorTmp.class);
 
     private final FFMPEGLocator locator;
 
-    ScreenExtractorTmp() {
-        this.locator = new DefaultFFMPEGLocator();
+    ScreenExtractorTmp(FFMPEGLocator locator) {
+        this.locator = locator;
     }
 
     void renderOneImage(MultimediaObject multimediaObject,
-                               int width, int height,
-                               long millis,
-                               File outputFile,
-                               int quality,
-                               boolean keyframesSeeking)
+                        int width, int height,
+                        long millis,
+                        File outputFile,
+                        int quality,
+                        boolean keyframesSeeking)
             throws Exception {
         String inputSource = multimediaObject.isURL() ? multimediaObject.getURL().toString() : multimediaObject.getFile().getAbsolutePath();
         try {
