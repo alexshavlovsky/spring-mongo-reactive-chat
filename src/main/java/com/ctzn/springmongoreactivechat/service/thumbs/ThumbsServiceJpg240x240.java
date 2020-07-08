@@ -45,7 +45,8 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
     @Override
     public Mono<byte[]> getThumb(ThumbKey key) {
         return DataBufferUtils
-                .join(attachmentService.getAttachmentById(key.fileId))
+                .join(attachmentService.getAttachmentById(key.fileId)
+                        .switchIfEmpty(Mono.error(() -> new Exception("File does not exist: " + key.fileId))))
                 .flatMap(dataBuffer -> {
                     try {
                         LOG.info("Generate a {} thumb of {}", key.thumbType, key.fileId);
