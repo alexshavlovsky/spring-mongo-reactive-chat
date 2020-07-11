@@ -2,30 +2,18 @@ package com.ctzn.springmongoreactivechat.service.thumbs;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ws.schild.jave.*;
+import ws.schild.jave.FFMPEGExecutor;
+import ws.schild.jave.FFMPEGLocator;
+import ws.schild.jave.MultimediaObject;
+import ws.schild.jave.Utils;
 
-import java.io.*;
-import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 // This class is a temporal substitute until issues are resolved in the JAVE2 repo
 class ScreenExtractorTmp {
-
-    static class RBufferedReader extends BufferedReader {
-        private final ArrayList<String> lines = new ArrayList<>();
-
-        RBufferedReader(Reader in) {
-            super(in);
-        }
-
-        @Override
-        public String readLine() throws IOException {
-            if (lines.size() > 0) {
-                return lines.remove(0);
-            } else {
-                return super.readLine();
-            }
-        }
-    }
 
     private static final Logger LOG = LoggerFactory.getLogger(ScreenExtractorTmp.class);
 
@@ -55,7 +43,7 @@ class ScreenExtractorTmp {
             LOG.debug("Access denied checking destination folder", e);
         }
 
-        FFMPEGExecutor ffmpeg = this.locator.createExecutor();
+        FFMPEGExecutor ffmpeg = locator.createExecutor();
         if (keyframesSeeking) {
             ffmpeg.addArgument("-ss");
             ffmpeg.addArgument(Utils.buildTimeDuration(millis));
@@ -81,8 +69,7 @@ class ScreenExtractorTmp {
             throw new Exception(e);
         }
         try {
-            RBufferedReader reader = new RBufferedReader(
-                    new InputStreamReader(ffmpeg.getErrorStream()));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(ffmpeg.getErrorStream()));
             int lineNR = 0;
             String line;
             while ((line = reader.readLine()) != null) {
