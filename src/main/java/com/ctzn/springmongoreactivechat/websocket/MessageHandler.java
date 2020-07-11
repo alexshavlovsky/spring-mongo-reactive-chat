@@ -2,9 +2,10 @@ package com.ctzn.springmongoreactivechat.websocket;
 
 import com.ctzn.springmongoreactivechat.domain.DomainMapper;
 import com.ctzn.springmongoreactivechat.domain.dto.IncomingMessage;
+import com.ctzn.springmongoreactivechat.service.AttachmentHandlerService;
 import com.ctzn.springmongoreactivechat.service.BroadcastEmitterService;
-import com.ctzn.springmongoreactivechat.service.messages.BroadcastMessageService;
 import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
+import com.ctzn.springmongoreactivechat.service.messages.BroadcastMessageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,12 +26,14 @@ public class MessageHandler implements WebSocketHandler {
     private final ChatBrokerService chatBroker;
     private final BroadcastMessageService broadcastMessageService;
     private final BroadcastEmitterService broadcastEmitterService;
+    private final AttachmentHandlerService attachmentHandlerService;
     private final DomainMapper mapper;
 
-    public MessageHandler(ChatBrokerService chatBroker, BroadcastMessageService broadcastMessageService, BroadcastEmitterService broadcastEmitterService, DomainMapper mapper) {
+    public MessageHandler(ChatBrokerService chatBroker, BroadcastMessageService broadcastMessageService, BroadcastEmitterService broadcastEmitterService, AttachmentHandlerService attachmentHandlerService, DomainMapper mapper) {
         this.chatBroker = chatBroker;
         this.broadcastMessageService = broadcastMessageService;
         this.broadcastEmitterService = broadcastEmitterService;
+        this.attachmentHandlerService = attachmentHandlerService;
         this.mapper = mapper;
     }
 
@@ -45,7 +48,7 @@ public class MessageHandler implements WebSocketHandler {
 
         Mono<Void> input = incoming.transform(skipGreeting())
                 .doOnError(e -> LOG.error(e.getMessage()))
-                .transform(handleClientMessage(sessionId, chatBroker, broadcastMessageService, broadcastEmitterService, LOG))
+                .transform(handleClientMessage(sessionId, chatBroker, broadcastMessageService, broadcastEmitterService, attachmentHandlerService, mapper, LOG))
                 .then();
 
         Flux<String> outgoing = incoming.transform(parseGreetingTimeout(sessionId, GREETING_TIMEOUT))

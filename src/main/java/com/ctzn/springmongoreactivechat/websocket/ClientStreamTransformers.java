@@ -4,9 +4,11 @@ import com.ctzn.springmongoreactivechat.domain.DomainMapper;
 import com.ctzn.springmongoreactivechat.domain.Message;
 import com.ctzn.springmongoreactivechat.domain.dto.ChatClient;
 import com.ctzn.springmongoreactivechat.domain.dto.IncomingMessage;
+import com.ctzn.springmongoreactivechat.domain.dto.RichMessage;
+import com.ctzn.springmongoreactivechat.service.AttachmentHandlerService;
 import com.ctzn.springmongoreactivechat.service.BroadcastEmitterService;
-import com.ctzn.springmongoreactivechat.service.messages.BroadcastMessageService;
 import com.ctzn.springmongoreactivechat.service.ChatBrokerService;
+import com.ctzn.springmongoreactivechat.service.messages.BroadcastMessageService;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.springframework.web.reactive.socket.WebSocketMessage;
@@ -29,7 +31,7 @@ class ClientStreamTransformers {
                 });
     }
 
-    static <T> Function<Flux<IncomingMessage>, Publisher<T>> parseGreetingAndTransform(Function<Flux<IncomingMessage>, Publisher<T>> transformer) {
+    private static <T> Function<Flux<IncomingMessage>, Publisher<T>> parseGreetingAndTransform(Function<Flux<IncomingMessage>, Publisher<T>> transformer) {
         return in -> in
                 .switchOnFirst((signal, flux) -> {
                     if (signal.hasValue()) {
@@ -54,8 +56,11 @@ class ClientStreamTransformers {
     }
 
     static Function<Flux<IncomingMessage>, Publisher<Message>> handleClientMessage(
-            String sessionId, ChatBrokerService chatBroker, BroadcastMessageService broadcastMessageService, BroadcastEmitterService broadcastEmitterService, Logger LOG
-    ) {
+            String sessionId,
+            ChatBrokerService chatBroker,
+            BroadcastMessageService broadcastMessageService,
+            BroadcastEmitterService broadcastEmitterService,
+            AttachmentHandlerService attachmentHandlerService, DomainMapper mapper, Logger LOG) {
         return in -> in.
                 flatMap(userMessage -> {
                     switch (userMessage.getType()) {
@@ -69,8 +74,14 @@ class ClientStreamTransformers {
                             LOG.trace("...{}", userMessage);
                             broadcastEmitterService.send(userMessage.toMessage(sessionId));
                             break;
-                        case "msg":
                         case "richMsg":
+                            try {
+                                RichMessage richMessage = mapper.fromJson(userMessage.getPayload(), RichMessage.class);
+                                attachmentHandlerService.handle(richMessage.getAttachments());
+                            } catch (Exception e) {
+                                LOG.error("Error handling a rich message: {}", e.getMessage());
+                            }
+                        case "msg":
                             LOG.info("<--{}", userMessage);
                             return broadcastMessageService.saveMessage(userMessage.toMessage(sessionId));
                         default:
