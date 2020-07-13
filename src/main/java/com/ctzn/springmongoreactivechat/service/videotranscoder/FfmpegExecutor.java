@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.service.thumbs;
+package com.ctzn.springmongoreactivechat.service.videotranscoder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +23,9 @@ import java.util.regex.Pattern;
 
 // resulting files will be located at paths: c:/vid/1080.mp4 and c:/vid/1080.webm
 
-public class WebTranscoder {
+public class FfmpegExecutor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(WebTranscoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(FfmpegExecutor.class);
 
     private static final Pattern SUCCESS_PATTERN =
             Pattern.compile("^\\s*video:\\S+\\s+audio:\\S+\\s+subtitle:\\S+\\s+global headers:\\S+.*$",
@@ -33,11 +33,11 @@ public class WebTranscoder {
 
     private final FFMPEGLocator locator;
 
-    public WebTranscoder() {
+    public FfmpegExecutor() {
         this.locator = new DefaultFFMPEGLocator();
     }
 
-    public WebTranscoder(FFMPEGLocator locator) {
+    public FfmpegExecutor(FFMPEGLocator locator) {
         this.locator = locator;
     }
 

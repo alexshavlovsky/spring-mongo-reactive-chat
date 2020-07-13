@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import org.springframework.data.mongodb.gridfs.ReactiveGridFsTemplate;
 
 @Configuration
-@Profile("mongo-service")
+@Profile({"mongo-service", "mongo-grid-attachments", "mongo-video-transcoder"})
 //@EnableReactiveMongoRepositories("com.ctzn.springmongoreactivechat.repository")
 class MongoConfig extends AbstractReactiveMongoConfiguration {
 
