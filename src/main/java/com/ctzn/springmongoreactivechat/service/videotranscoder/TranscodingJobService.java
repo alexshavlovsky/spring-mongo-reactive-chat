@@ -2,12 +2,14 @@ package com.ctzn.springmongoreactivechat.service.videotranscoder;
 
 import com.ctzn.springmongoreactivechat.domain.TranscodingJob;
 import com.ctzn.springmongoreactivechat.repository.TranscodingJobRepository;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.util.Comparator;
 
 @Service
+@Profile("mongo-video-transcoder")
 public class TranscodingJobService {
     private TranscodingJobRepository repository;
 
