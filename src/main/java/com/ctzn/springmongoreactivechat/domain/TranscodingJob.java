@@ -16,7 +16,7 @@ import java.util.List;
 @TypeAlias("transcoding-jobs")
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public class TranscodingJob {
-    public enum Status {PENDING, DONE, ERROR}
+    public enum Status {PENDING, EXECUTING, DONE, ERROR}
 
     public enum Preset {MP4_480, WEBM_480, MP4_720, WEBM_720, MP4_1080, WEBM_1080}
 
@@ -34,13 +34,13 @@ public class TranscodingJob {
     private List<String> log;
     private String result;
 
-    private void appendToLog(String message) {
+    public void appendToLog(String message) {
         lastModified = new Date();
         lastMessage = message;
         log.add(String.format("%tc %s : %s", lastModified, status, lastMessage));
     }
 
-    private void setStatusAndLog(Status status, String message) {
+    public void setStatusAndLog(Status status, String message) {
         this.status = status;
         appendToLog(message);
     }

@@ -10,20 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
-import org.springframework.data.mongodb.core.query.BasicQuery;
-import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Comparator;
-
-import static org.springframework.data.mongodb.core.query.Criteria.where;
-import static org.springframework.data.mongodb.core.query.Query.query;
 
 @Service
 @Profile("mongo-video-transcoder")
@@ -37,11 +30,13 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
     private ReactiveMongoOperations mongo;
     private AttachmentService attachmentService;
     private FfmpegLocatorService ffmpegLocatorService;
+    private TranscodingJobService transcodingJobService;
 
-    public MongoVideoTranscoderService(ReactiveMongoOperations mongo, AttachmentService attachmentService, FfmpegLocatorService ffmpegLocatorService) {
+    public MongoVideoTranscoderService(ReactiveMongoOperations mongo, AttachmentService attachmentService, FfmpegLocatorService ffmpegLocatorService, TranscodingJobService transcodingJobService) {
         this.mongo = mongo;
         this.attachmentService = attachmentService;
         this.ffmpegLocatorService = ffmpegLocatorService;
+        this.transcodingJobService = transcodingJobService;
     }
 
     @Override
@@ -54,7 +49,7 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
                         TranscodingJob.Preset.MP4_480,
                         TranscodingJob.Preset.MP4_720
                 ).map(preset -> TranscodingJob.newInstance(preset, attachment, compoundWebVideo)))
-                .flatMap(transcodingJob -> mongo.save(transcodingJob))
+                .flatMap(transcodingJob -> transcodingJobService.save(transcodingJob))
                 .doOnNext(transcodingJob -> LOG.info("New transcoding job created: {}", transcodingJob))
                 .subscribe();
     }
@@ -62,16 +57,18 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
 
     @Scheduled(fixedRate = 10 * 1000)
     public void work() {
-        mongo.find(new BasicQuery("{'status': 'PENDING'}"), TranscodingJob.class)
-                .sort(Comparator.comparingInt(TranscodingJob::getPriority).thenComparing(TranscodingJob::getCreatedOn))
-                .next()
+        transcodingJobService.getNextPendingJob()
+                .flatMap(job -> transcodingJobService.updateJobStatus(job, TranscodingJob.Status.EXECUTING, "Start executing")
+                        .doOnNext(j -> LOG.info("Start executing job: {}", j))
+                )
                 .flatMap(job -> {
                     try {
                         executeJob(job);
-                        System.out.println("Job is done: " + job.getId());
-                        return mongo.updateFirst(query(where("_id").is(job.getId())), Update.update("status", TranscodingJob.Status.DONE), TranscodingJob.class).then();
+                        return transcodingJobService.updateJobStatus(job, TranscodingJob.Status.DONE, "Finished")
+                                .doOnNext(j -> LOG.info("Job is finished: {}", j));
                     } catch (IOException e) {
-                        return Mono.error(e);
+                        return transcodingJobService.updateJobStatus(job, TranscodingJob.Status.ERROR, e.getMessage())
+                                .doOnNext(j -> LOG.error("Error executing job: {}", j));
                     }
                 })
                 .subscribe();

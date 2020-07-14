@@ -9,10 +9,11 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.data.mongodb.config.AbstractReactiveMongoConfiguration;
 import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
 import org.springframework.data.mongodb.gridfs.ReactiveGridFsTemplate;
+import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
 
 @Configuration
 @Profile({"mongo-service", "mongo-grid-attachments", "mongo-video-transcoder"})
-//@EnableReactiveMongoRepositories("com.ctzn.springmongoreactivechat.repository")
+@EnableReactiveMongoRepositories("com.ctzn.springmongoreactivechat.repository")
 class MongoConfig extends AbstractReactiveMongoConfiguration {
 
     @Value("${spring.data.mongodb.host}")
