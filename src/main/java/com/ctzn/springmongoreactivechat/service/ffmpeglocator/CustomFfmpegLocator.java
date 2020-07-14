@@ -1,4 +1,4 @@
-package com.ctzn.springmongoreactivechat.service.thumbs;
+package com.ctzn.springmongoreactivechat.service.ffmpeglocator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,7 @@ public class CustomFfmpegLocator extends FFMPEGLocator {
      * It builds the default FFMPEGLocator, exporting the ffmpeg executable on a
      * temp file.
      */
-    CustomFfmpegLocator() {
+    public CustomFfmpegLocator() {
         String os = System.getProperty("os.name").toLowerCase();
         boolean isWindows = os.contains("windows");
         boolean isMac = os.contains("mac");

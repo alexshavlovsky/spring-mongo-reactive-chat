@@ -1,6 +1,8 @@
 package com.ctzn.springmongoreactivechat.service.thumbs;
 
+import com.ctzn.springmongoreactivechat.service.FileUtil;
 import com.ctzn.springmongoreactivechat.service.attachments.AttachmentService;
+import com.ctzn.springmongoreactivechat.service.ffmpeglocator.FfmpegLocatorService;
 import com.sun.pdfview.PDFFile;
 import com.sun.pdfview.PDFPage;
 import net.coobird.thumbnailator.Thumbnails;
@@ -12,7 +14,6 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import ws.schild.jave.FFMPEGLocator;
 import ws.schild.jave.MultimediaObject;
 
 import java.awt.*;
@@ -32,9 +33,11 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
     private Logger LOG = LoggerFactory.getLogger(ThumbsServiceJpg240x240.class);
 
     private AttachmentService attachmentService;
+    private FfmpegLocatorService ffmpegLocatorService;
 
-    public ThumbsServiceJpg240x240(AttachmentService attachmentService) {
+    public ThumbsServiceJpg240x240(AttachmentService attachmentService, FfmpegLocatorService ffmpegLocatorService) {
         this.attachmentService = attachmentService;
+        this.ffmpegLocatorService = ffmpegLocatorService;
     }
 
     @Override
@@ -86,12 +89,8 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
         return bufferedImage;
     }
 
-    private final String TEMP_FOLDER_PATH = "app_temp_folder";
-    private final Path tempPath = Paths.get(TEMP_FOLDER_PATH);
-    private final FFMPEGLocator locator = new CustomFfmpegLocator();
-
     private InputStream videoAsImage(DataBuffer dataBuffer) throws Exception {
-        if (!Files.exists(tempPath)) Files.createDirectories(tempPath);
+        Path  tempPath = FileUtil.getTempFolder();
         String randomFileName = UUID.randomUUID().toString();
         File sourceFile = tempPath.resolve(randomFileName).toFile();
         Path thumbPath = tempPath.resolve(randomFileName + ".jpg");
@@ -99,9 +98,9 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
             fc.write(dataBuffer.asByteBuffer());
         }
         try {
-            MultimediaObject multimediaObject = new MultimediaObject(sourceFile, locator);
+            MultimediaObject multimediaObject = new MultimediaObject(sourceFile, ffmpegLocatorService.getInstance());
             long duration = multimediaObject.getInfo().getDuration();
-            ScreenExtractorTmp screenExtractor = new ScreenExtractorTmp(locator);
+            ScreenExtractorTmp screenExtractor = new ScreenExtractorTmp(ffmpegLocatorService.getInstance());
             screenExtractor.renderOneImage(multimediaObject, -1, -1, duration / 2, thumbPath.toFile(), 2, true);
             if (Files.exists(thumbPath))
                 return new ByteArrayInputStream(Files.readAllBytes(thumbPath));

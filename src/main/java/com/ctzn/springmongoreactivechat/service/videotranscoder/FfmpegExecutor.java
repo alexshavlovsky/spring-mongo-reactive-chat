@@ -101,19 +101,19 @@ public class FfmpegExecutor {
     // ffmpeg -i input -passlogfile _1080web -vf scale="trunc(oh*a/2)*2:1080" -b:v 1800k -minrate 900k -maxrate 2610k -quality good -crf 31 -c:v libvpx-vp9 -c:a libopus -pass 1 -speed 4    1080.webm
     // ffmpeg -i input -passlogfile _1080web -vf scale="trunc(oh*a/2)*2:1080" -b:v 1800k -minrate 900k -maxrate 2610k -quality good -crf 31 -c:v libvpx-vp9 -c:a libopus -pass 2 -speed 4 -y 1080.webm
 
-    static private List<String> SUPPORTED_RES_KEYS = Arrays.asList("0480", "0720", "1080");
+    static private List<Integer> SUPPORTED_SIZES = Arrays.asList(480, 720, 1080);
     static private String[] PRESET_0480 = {"-passlogfile", "log_pref", "-vf", "scale=\"trunc(oh*a/2)*2:480\"", "-b:v", "750k", "-minrate", "375k", "-maxrate", "1088k"};
     static private String[] PRESET_0720 = {"-passlogfile", "log_pref", "-vf", "scale=\"trunc(oh*a/2)*2:720\"", "-b:v", "1024k", "-minrate", "512k", "-maxrate", "1485k"};
     static private String[] PRESET_1080 = {"-passlogfile", "log_pref", "-vf", "scale=\"trunc(oh*a/2)*2:1080\"", "-b:v", "1800k", "-minrate", "900k", "-maxrate", "2610k"};
 
-    void transcode(MultimediaObject multimediaObject, File targetFolder, String formatKey, String resolutionKey) throws Exception {
-        if (!SUPPORTED_RES_KEYS.contains(resolutionKey))
-            throw new UnsupportedOperationException("Unsupported resolution: " + formatKey);
-        List<String> preset1p = new ArrayList<>(Arrays.asList("0480".equals(resolutionKey) ? PRESET_0480 : "0720".equals(resolutionKey) ? PRESET_0720 : PRESET_1080));
-        String outputFile = resolutionKey + "." + formatKey;
-        String logFilePrefix = new File(targetFolder, "_" + resolutionKey + formatKey).getAbsolutePath();
+    void transcode(MultimediaObject multimediaObject, File targetFolder, String type, int size) throws Exception {
+        if (!SUPPORTED_SIZES.contains(size))
+            throw new UnsupportedOperationException("Unsupported resolution: " + type);
+        List<String> preset1p = new ArrayList<>(Arrays.asList(size == 480 ? PRESET_0480 : size == 720 ? PRESET_0720 : PRESET_1080));
+        String outputFile = size + "." + type;
+        String logFilePrefix = new File(targetFolder, "_" + size + type).getAbsolutePath();
         preset1p.set(preset1p.indexOf("log_pref"), logFilePrefix);
-        switch (formatKey) {
+        switch (type) {
             case "mp4":
                 preset1p.addAll(Arrays.asList("-c:v", "libx264", "-pass"));
                 List<String> preset2p = new ArrayList<>(preset1p);
@@ -123,15 +123,14 @@ public class FfmpegExecutor {
                 encode(multimediaObject, targetFolder, outputFile, preset2p);
                 break;
             case "webm":
-                String crf_val = "0480".equals(resolutionKey) ? "33" : "0720".equals(resolutionKey) ? "32" : "31";
+                String crf_val = size == 480 ? "33" : size == 720 ? "32" : "31";
                 preset1p.addAll(Arrays.asList("-quality", "good", "-crf", crf_val, "-c:v", "libvpx-vp9", "-c:a", "libopus", "-b:a", "128k", "-pass", "1", "-speed", "4"));
                 encode(multimediaObject, targetFolder, outputFile, preset1p);
                 preset1p.set(preset1p.indexOf("-pass") + 1, "2");
                 encode(multimediaObject, targetFolder, outputFile, preset1p);
                 break;
             default:
-                throw new UnsupportedOperationException("Unsupported format: " + formatKey);
+                throw new UnsupportedOperationException("Unsupported format: " + type);
         }
     }
-
 }
