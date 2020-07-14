@@ -1,5 +1,6 @@
 package com.ctzn.springmongoreactivechat.service.attachments;
 
+import com.ctzn.springmongoreactivechat.service.FileUtil;
 import org.reactivestreams.Publisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -54,12 +55,22 @@ public class FileSystemAttachmentService extends AttachmentService {
         }
     }
 
+    private String getRandomId() {
+        return UUID.randomUUID().toString();
+    }
+
     @Override
     Function<Flux<FilePart>, Publisher<Tuple2<String, String>>> saveAttachmentsHandler() {
         return parts -> parts.flatMap(part -> {
-            String fileId = UUID.randomUUID().toString();
-            return part.transferTo(uploadPath.resolve(fileId)).then(Mono.just(Tuples.of(part.filename(), fileId)));
+            String fileId = getRandomId();
+            return part.transferTo(uploadPath.resolve(fileId)).thenReturn(Tuples.of(part.filename(), fileId));
         });
+    }
+
+    @Override
+    public Mono<String> store(Publisher<DataBuffer> content, String filename) {
+        String fileId = getRandomId();
+        return FileUtil.transferDataBufferTo(content, uploadPath.resolve(fileId)).thenReturn(fileId);
     }
 
     @Override

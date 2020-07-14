@@ -40,6 +40,8 @@ public abstract class AttachmentService {
     // object on the frontend side
     abstract Function<Flux<FilePart>, Publisher<Tuple2<String, String>>> saveAttachmentsHandler();
 
+    public abstract Mono<String> store(Publisher<DataBuffer> content, String filename);
+
     // loads an attachment by id and returns an id
     private Function<Mono<String>, Publisher<String>> loadAttachmentByIdHandler(ServerWebExchange exchange) {
         return fileIdMono -> fileIdMono.flatMap(

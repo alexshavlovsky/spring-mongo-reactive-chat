@@ -1,5 +1,6 @@
 package com.ctzn.springmongoreactivechat.service.attachments;
 
+import org.bson.types.ObjectId;
 import org.reactivestreams.Publisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.buffer.DataBuffer;
@@ -47,6 +48,11 @@ public class MongoAttachmentService extends AttachmentService {
                 .store(part.content(), part.filename())
                 .map(objectId -> Tuples.of(part.filename(), objectId.toHexString()))
         );
+    }
+
+    @Override
+    public Mono<String> store(Publisher<DataBuffer> content, String filename) {
+        return gridFsTemplate.store(content, filename).map(ObjectId::toHexString);
     }
 
     @Override
