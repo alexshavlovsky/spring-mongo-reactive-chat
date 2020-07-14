@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -106,7 +107,7 @@ public class FfmpegExecutor {
     static private String[] PRESET_0720 = {"-passlogfile", "log_pref", "-vf", "scale=\"trunc(oh*a/2)*2:720\"", "-b:v", "1024k", "-minrate", "512k", "-maxrate", "1485k"};
     static private String[] PRESET_1080 = {"-passlogfile", "log_pref", "-vf", "scale=\"trunc(oh*a/2)*2:1080\"", "-b:v", "1800k", "-minrate", "900k", "-maxrate", "2610k"};
 
-    void transcode(MultimediaObject multimediaObject, File targetFolder, String type, int size) throws Exception {
+    Path transcode(MultimediaObject multimediaObject, File targetFolder, String type, int size) throws Exception {
         if (!SUPPORTED_SIZES.contains(size))
             throw new UnsupportedOperationException("Unsupported resolution: " + type);
         List<String> preset1p = new ArrayList<>(Arrays.asList(size == 480 ? PRESET_0480 : size == 720 ? PRESET_0720 : PRESET_1080));
@@ -132,5 +133,6 @@ public class FfmpegExecutor {
             default:
                 throw new UnsupportedOperationException("Unsupported format: " + type);
         }
+        return targetFolder.toPath().resolve(outputFile);
     }
 }

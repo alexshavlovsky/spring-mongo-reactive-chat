@@ -33,4 +33,9 @@ public class TranscodingJobService {
         return repository.save(job);
 //        return mongo.updateFirst(query(where("_id").is(job.getId())), Update.update("status", status), TranscodingJob.class);
     }
+
+    public Mono<TranscodingJob> updateLog(TranscodingJob job, String message) {
+        job.appendToLog(message);
+        return repository.save(job);
+    }
 }

@@ -9,14 +9,19 @@ import com.ctzn.springmongoreactivechat.service.ffmpeglocator.FfmpegLocatorServi
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import ws.schild.jave.MultimediaObject;
 
-import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 @Service
 @Profile("mongo-video-transcoder")
@@ -66,17 +71,45 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
                         executeJob(job);
                         return transcodingJobService.updateJobStatus(job, TranscodingJob.Status.DONE, "Finished")
                                 .doOnNext(j -> LOG.info("Job is finished: {}", j));
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         return transcodingJobService.updateJobStatus(job, TranscodingJob.Status.ERROR, e.getMessage())
                                 .doOnNext(j -> LOG.error("Error executing job: {}", j));
                     }
                 })
-                .subscribe();
+                .block();
     }
 
-    private void executeJob(TranscodingJob job) throws IOException {
-        Path tempPath = FileUtil.getTempFolder();
+    private void logInternal(TranscodingJob job, String message) {
+        transcodingJobService.updateLog(job, message).block();
+    }
+
+    private void executeJob(TranscodingJob job) throws Exception {
+        logInternal(job, "Initialisation");
+        String fileId = job.getAttachment().getFileId();
+        Path tempPath = FileUtil.getTempFolder().resolve(fileId);
+        FileUtil.createFolder(tempPath);
+        String sourceFileName = "source";
+        Path sourceFilePath = tempPath.resolve(sourceFileName);
+        if (Files.notExists(sourceFilePath)) {
+            logInternal(job, "Copy the source file to temp folder");
+            DataBufferUtils.write(attachmentService.getAttachmentById(fileId), sourceFilePath).thenReturn(true)
+                    .blockOptional().orElseThrow(() -> new FileNotFoundException("Source file does not exist: " + fileId));
+        }
+
+        logInternal(job, "Create an executing process");
+        MultimediaObject multimediaObject = new MultimediaObject(sourceFilePath.toFile());
         FfmpegExecutor executor = new FfmpegExecutor(ffmpegLocatorService.getInstance());
-//        TODO: implement this dummy method
+        Path result = executor.transcode(multimediaObject, tempPath.toFile(), job.getType(), job.getSize());
+
+        logInternal(job, "Store a result using attachment service");
+        String attachmentName = fileId + '_' + job.getSize() + '.' + job.getType();
+
+        String attachmentId = attachmentService.store(DataBufferUtils.read(result, new DefaultDataBufferFactory(), 4096, StandardOpenOption.READ), attachmentName)
+                .blockOptional().orElseThrow(() -> new FileNotFoundException("Error storing resulting file: " + attachmentName));
+
+        LOG.info("Result was successfully saved with id: {}", attachmentId);
+
+        // TODO: update the parent CompoundWebVideo and clean up temporary files
+
     }
 }
