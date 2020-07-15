@@ -10,4 +10,6 @@ import reactor.core.publisher.Flux;
 @Profile("mongo-video-transcoder")
 public interface TranscodingJobRepository extends ReactiveMongoRepository<TranscodingJob, String> {
     Flux<TranscodingJob> getByStatus(TranscodingJob.Status status);
+
+    Flux<TranscodingJob> getByCompoundWebVideo_IdAndStatus(String compoundWebVideoId, TranscodingJob.Status status);
 }

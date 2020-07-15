@@ -9,6 +9,6 @@ import org.springframework.stereotype.Service;
 public class DummyVideoTranscoderService implements VideoTranscoderService {
     @Override
     public void addTask(AttachmentModel attachment) {
-        // this method do nothing
+        // this method does nothing
     }
 }

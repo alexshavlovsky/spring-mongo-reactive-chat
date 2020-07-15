@@ -3,6 +3,8 @@ package com.ctzn.springmongoreactivechat.service.videotranscoder;
 import com.ctzn.springmongoreactivechat.domain.CompoundWebVideo;
 import com.ctzn.springmongoreactivechat.domain.TranscodingJob;
 import com.ctzn.springmongoreactivechat.domain.dto.AttachmentModel;
+import com.ctzn.springmongoreactivechat.domain.dto.VideoSource;
+import com.ctzn.springmongoreactivechat.repository.CompoundWebVideoRepository;
 import com.ctzn.springmongoreactivechat.service.FileUtil;
 import com.ctzn.springmongoreactivechat.service.attachments.AttachmentService;
 import com.ctzn.springmongoreactivechat.service.ffmpeglocator.FfmpegLocatorService;
@@ -15,6 +17,7 @@ import org.springframework.data.mongodb.core.ReactiveMongoOperations;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileSystemUtils;
 import reactor.core.publisher.Flux;
 import ws.schild.jave.MultimediaObject;
 
@@ -36,12 +39,14 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
     private AttachmentService attachmentService;
     private FfmpegLocatorService ffmpegLocatorService;
     private TranscodingJobService transcodingJobService;
+    private CompoundWebVideoRepository compoundWebVideoRepository;
 
-    public MongoVideoTranscoderService(ReactiveMongoOperations mongo, AttachmentService attachmentService, FfmpegLocatorService ffmpegLocatorService, TranscodingJobService transcodingJobService) {
+    public MongoVideoTranscoderService(ReactiveMongoOperations mongo, AttachmentService attachmentService, FfmpegLocatorService ffmpegLocatorService, TranscodingJobService transcodingJobService, CompoundWebVideoRepository compoundWebVideoRepository) {
         this.mongo = mongo;
         this.attachmentService = attachmentService;
         this.ffmpegLocatorService = ffmpegLocatorService;
         this.transcodingJobService = transcodingJobService;
+        this.compoundWebVideoRepository = compoundWebVideoRepository;
     }
 
     @Override
@@ -107,9 +112,16 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
         String attachmentId = attachmentService.store(DataBufferUtils.read(result, new DefaultDataBufferFactory(), 4096, StandardOpenOption.READ), attachmentName)
                 .blockOptional().orElseThrow(() -> new FileNotFoundException("Error storing resulting file: " + attachmentName));
 
-        LOG.info("Result was successfully saved with id: {}", attachmentId);
-
-        // TODO: update the parent CompoundWebVideo and clean up temporary files
-
+        logInternal(job, "Add a new video source");
+        VideoSource videoSource = new VideoSource("/videos/" + attachmentId, "video/" + job.getType(), job.getSize());
+        String compoundWebVideoId = job.getCompoundWebVideo().getId();
+        CompoundWebVideo compoundWebVideo = compoundWebVideoRepository.findById(compoundWebVideoId)
+                .blockOptional().orElseThrow(() -> new FileNotFoundException("CompoundWevVideo does not exist: " + compoundWebVideoId));
+        compoundWebVideo.getSources().add(videoSource);
+        compoundWebVideoRepository.save(compoundWebVideo).block();
+        if (transcodingJobService.countPendingJobsByCompoundWebVideo_id(compoundWebVideoId) == 0) {
+            logInternal(job, "Delete temp files");
+            FileSystemUtils.deleteRecursively(tempPath);
+        }
     }
 }

@@ -40,4 +40,9 @@ public class TranscodingJobService {
         job.appendToLog(message);
         return repository.save(job);
     }
+
+    public int countPendingJobsByCompoundWebVideo_id(String compoundWebVideoId) {
+        Long count = repository.getByCompoundWebVideo_IdAndStatus(compoundWebVideoId, TranscodingJob.Status.PENDING).count().block();
+        return (int) (count == null ? 0 : count);
+    }
 }

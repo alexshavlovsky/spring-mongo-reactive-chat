@@ -41,17 +41,18 @@ localhost:8080
 ```
 ## Technology Stack
 
-Component                      | Technology
----                            | ---
-Backend engine                 | Spring Boot WebFlux
-Database                       | Reactive MongoDB
-Protocol                       | Reactive WebSockets
-Server side thumbnails         | [Thumbnailator - a thumbnail generation library for Java](https://github.com/coobird/thumbnailator)
-PDF documents thumbnails       | [PDF renderer - Java library for rendering PDF documents](https://github.com/katjas/PDFrenderer)
-Video files thumbnails         | [The JAVE (Java Audio Video Encoder) library is Java wrapper on the ffmpeg project](https://github.com/a-schild/jave2)
-Caching                        | Caffeine in-memory cache
-Frontend engine                | Pure JS + WebSockets + Bootstrap
-or (see description)           | Angular 10 + PrimeNG
+Component                 | Technology
+---                       | ---
+Backend engine            | Spring Boot WebFlux
+Database                  | Reactive MongoDB
+Protocol                  | Reactive WebSockets
+Server side thumbnails    | [Thumbnailator - a thumbnail generation library for Java](https://github.com/coobird/thumbnailator)
+PDF documents thumbnails  | [PDF renderer - Java library for rendering PDF documents](https://github.com/katjas/PDFrenderer)
+Video files thumbnails    | [The JAVE (Java Audio Video Encoder) library is Java wrapper on the ffmpeg project](https://github.com/a-schild/jave2)
+HTML video transcoder     | Background service using JAVE ffmpeg wrapper
+Caching                   | Caffeine in-memory cache
+Frontend engine           | Pure JS + WebSockets + Bootstrap
+or (see description)      | Angular 10 + PrimeNG
 
 ## Chat protocol summary
 ```
@@ -78,4 +79,30 @@ or (see description)           | Angular 10 + PrimeNG
                        must be send by a client within first 5 seconds of ws session
            - snapshot  server-client greeting with the list of clients in the chat
            - updateMe  client-server with new user data (uid and nick)
+```
+## Video transcoder summary
+```
+        array of sources
+     +------------------------------------------------------+
+     |                                                      |
+     ˅                                                      |
++----------+  message  +-----------------------+    +--------------------+
+| Frontend |---------->| Video file attachmens |--->| Compound Web Video |
++----------+           +-----------------------+    +--------------------+
+     ^                     |                           |             ^
+     |                     |                           ˅             |
+     |                     |     +-------------------------+     +---------------------+
+     |                     |     | Transcoding jobs queue: |<--->|  Transcoder facade  |
+     |                     |     | 1 - MP4_480             |     +---------------------+
+     |                     |     | 2 - WEBM_480            |             ^      ^
+     |                     |     | 3 - MP4_720             |             |      |
+     |                     |     | 4 - WEBM_720            |             |      ˅
+     |                     |     | ...                     |             |  +-----------------+
+     |                     |     +-------------------------+             |  | Ffmpeg executor |
+     |                     |                                             |  +-----------------+
+     |                     |    +--------------------+                   |
+     |                     +--->| Attachment service |<------------------+
+     |  original file           +--------------------+
+     |  and transcoded sources           |
+     +-----------------------------------+
 ```
