@@ -113,7 +113,7 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
                 .blockOptional().orElseThrow(() -> new FileNotFoundException("Error storing resulting file: " + attachmentName));
 
         logInternal(job, "Add a new video source");
-        VideoSource videoSource = new VideoSource("/videos/" + attachmentId, "video/" + job.getType(), job.getSize());
+        VideoSource videoSource = new VideoSource(attachmentId, "video/" + job.getType(), job.getSize());
         String compoundWebVideoId = job.getCompoundWebVideo().getId();
         CompoundWebVideo compoundWebVideo = compoundWebVideoRepository.findById(compoundWebVideoId)
                 .blockOptional().orElseThrow(() -> new FileNotFoundException("CompoundWevVideo does not exist: " + compoundWebVideoId));

@@ -32,7 +32,6 @@ public class TranscodingJob {
     private Date lastModified;
     private String lastMessage;
     private List<String> log;
-    private String result;
 
     public void appendToLog(String message) {
         lastModified = new Date();

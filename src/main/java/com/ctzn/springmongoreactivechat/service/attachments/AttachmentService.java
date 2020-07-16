@@ -57,6 +57,8 @@ public abstract class AttachmentService {
 
     public abstract Flux<DataBuffer> getAttachmentById(String fileId);
 
+    public abstract Mono<Long> getFileLength(String fileId);
+
     // handles all attachments and returns a map containing entries of a FormData filename and a file id returned by an attachment service
     public Mono<Map<String, String>> saveAttachments(Flux<FilePart> parts, ServerWebExchange exchange) {
         return parts

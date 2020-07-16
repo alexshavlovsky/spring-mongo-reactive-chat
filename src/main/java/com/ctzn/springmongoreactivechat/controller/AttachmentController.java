@@ -46,7 +46,8 @@ public class AttachmentController {
     }
 
     @GetMapping("thumbs/{thumbType}/{fileId}")
-    public Mono<Void> getImageThumbByFileId(@PathVariable String fileId, @PathVariable String thumbType, ServerWebExchange exchange) {
+    public Mono<Void> getImageThumbByFileId(@PathVariable String fileId, @PathVariable String
+            thumbType, ServerWebExchange exchange) {
         exchange.getResponse().getHeaders().setContentType(thumbsService.getMediaType());
         return exchange.getResponse().writeWith(
                 thumbsService.getThumb(new ThumbsService.ThumbKey(fileId, thumbType))

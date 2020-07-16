@@ -3,6 +3,7 @@ package com.ctzn.springmongoreactivechat.service.attachments;
 import com.ctzn.springmongoreactivechat.service.FileUtil;
 import org.reactivestreams.Publisher;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
@@ -82,5 +83,10 @@ public class FileSystemAttachmentService extends AttachmentService {
     public Flux<DataBuffer> getAttachmentById(String fileId) {
         Path path = uploadPath.resolve(fileId);
         return path.toFile().exists() ? DataBufferUtils.read(path, new DefaultDataBufferFactory(), getBufferSize()) : Flux.empty();
+    }
+
+    @Override
+    public Mono<Long> getFileLength(String fileId) {
+        return Mono.just(uploadPath.resolve(fileId).toFile().length());
     }
 }

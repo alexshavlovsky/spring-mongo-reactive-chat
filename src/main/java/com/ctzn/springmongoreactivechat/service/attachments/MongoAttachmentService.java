@@ -1,5 +1,6 @@
 package com.ctzn.springmongoreactivechat.service.attachments;
 
+import com.mongodb.client.gridfs.model.GridFSFile;
 import org.bson.types.ObjectId;
 import org.reactivestreams.Publisher;
 import org.springframework.context.annotation.Profile;
@@ -66,5 +67,10 @@ public class MongoAttachmentService extends AttachmentService {
                 .findOne(query(where("_id").is(fileId)))
                 .flatMap(gridFsTemplate::getResource)
                 .flatMapMany(ReactiveGridFsResource::getDownloadStream);
+    }
+
+    @Override
+    public Mono<Long> getFileLength(String fileId) {
+        return gridFsTemplate.findOne(query(where("_id").is(fileId))).map(GridFSFile::getLength);
     }
 }
