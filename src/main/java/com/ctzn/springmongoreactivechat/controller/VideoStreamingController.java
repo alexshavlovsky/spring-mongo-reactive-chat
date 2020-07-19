@@ -1,6 +1,7 @@
 package com.ctzn.springmongoreactivechat.controller;
 
 import com.ctzn.springmongoreactivechat.domain.CompoundWebVideo;
+import com.ctzn.springmongoreactivechat.repository.CompoundWebVideoRepository;
 import com.ctzn.springmongoreactivechat.service.attachments.AttachmentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +35,12 @@ public class VideoStreamingController {
 
     private AttachmentService attachmentService;
     private ReactiveMongoOperations mongo;
+    private CompoundWebVideoRepository compoundWebVideoRepository;
 
-    public VideoStreamingController(AttachmentService attachmentService, ReactiveMongoOperations mongo) {
+    public VideoStreamingController(AttachmentService attachmentService, ReactiveMongoOperations mongo, CompoundWebVideoRepository compoundWebVideoRepository) {
         this.attachmentService = attachmentService;
         this.mongo = mongo;
+        this.compoundWebVideoRepository = compoundWebVideoRepository;
     }
 
     private HttpRange parseRange(List<HttpRange> ranges, long contentLength) {
@@ -51,7 +54,7 @@ public class VideoStreamingController {
     }
 
     // This  controller streams video files accepting partial range requests
-    @GetMapping("{fileId}")
+    @GetMapping("streams/{fileId}")
     public Mono<Void> getVideo(@PathVariable String fileId, ServerWebExchange exchange) {
         HttpHeaders responseHeaders = exchange.getResponse().getHeaders();
         Mono<String> setHeaders = mongo.findOne(new BasicQuery(String.format("{'sources.src' : '%s'}", fileId)), CompoundWebVideo.class)
@@ -87,4 +90,11 @@ public class VideoStreamingController {
         ));
     }
 
+    @GetMapping("sources/{fileId}")
+    public Mono<CompoundWebVideo> getCompoundVideoByVideoFileId(@PathVariable String fileId, ServerWebExchange exchange) {
+        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        return compoundWebVideoRepository.findCompoundWebVideoByAttachment_FileId(fileId)
+                .doOnNext(compoundWebVideo -> LOG.trace("video-sources->[{}] {}", getRemoteHost(exchange), compoundWebVideo))
+                .switchIfEmpty(newHttpError(LOG, exchange, HttpStatus.NOT_FOUND, "video-sources", "source not found: " + fileId));
+    }
 }

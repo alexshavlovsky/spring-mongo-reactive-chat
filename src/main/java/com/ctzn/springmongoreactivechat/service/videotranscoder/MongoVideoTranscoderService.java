@@ -58,6 +58,8 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
                 .flatMapMany(compoundWebVideo -> Flux.just(
                         TranscodingJob.Preset.MP4_480,
                         TranscodingJob.Preset.MP4_720
+//                        TranscodingJob.Preset.WEBM_480,
+//                        TranscodingJob.Preset.WEBM_720
                 ).map(preset -> TranscodingJob.newInstance(preset, attachment, compoundWebVideo)))
                 .flatMap(transcodingJob -> transcodingJobService.save(transcodingJob))
                 .doOnNext(transcodingJob -> LOG.info("New transcoding job created: {}", transcodingJob))

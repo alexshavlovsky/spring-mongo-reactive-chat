@@ -23,6 +23,7 @@ package com.ctzn.springmongoreactivechat.domain;
 
 import com.ctzn.springmongoreactivechat.domain.dto.AttachmentModel;
 import com.ctzn.springmongoreactivechat.domain.dto.VideoSource;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import org.springframework.data.annotation.Id;
@@ -39,7 +40,9 @@ import java.util.List;
 public class CompoundWebVideo {
 
     @Id
+    @JsonIgnore
     private String id;
+    @JsonIgnore
     AttachmentModel attachment; // original video file
     String poster;              // '/path/to/poster.jpg'
     List<VideoSource> sources;  // video sources of various formats and sizes
