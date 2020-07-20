@@ -87,12 +87,12 @@ public class FfmpegExecutor {
     }
 
     // ================ H264 command lines ====================
-    // ffmpeg -i input -passlogfile _0480mp4 -vf scale="trunc(oh*a/2)*2:480" -b:v 750k -minrate 375k -maxrate 1088k -c:v libx264 -pass 1 -an -f mp4 -y NUL
-    // ffmpeg -i input -passlogfile _0480mp4 -vf scale="trunc(oh*a/2)*2:480" -b:v 750k -minrate 375k -maxrate 1088k -c:v libx264 -pass 2 -c:a aac -b:a 128k 0480.mp4
-    // ffmpeg -i input -passlogfile _0720mp4 -vf scale="trunc(oh*a/2)*2:720" -b:v 1024k -minrate 512k -maxrate 1485k -c:v libx264 -pass 1 -an -f mp4 -y NUL
-    // ffmpeg -i input -passlogfile _0720mp4 -vf scale="trunc(oh*a/2)*2:720" -b:v 1024k -minrate 512k -maxrate 1485k -c:v libx264 -pass 2 -c:a aac -b:a 128k 0720.mp4
-    // ffmpeg -i input -passlogfile _1080mp4 -vf scale="trunc(oh*a/2)*2:1080" -b:v 1800k -minrate 900k -maxrate 2610k -c:v libx264 -pass 1 -an -f mp4 -y NUL
-    // ffmpeg -i input -passlogfile _1080mp4 -vf scale="trunc(oh*a/2)*2:1080" -b:v 1800k -minrate 900k -maxrate 2610k -c:v libx264 -pass 2 -c:a aac -b:a 128k 1080.mp4
+    // ffmpeg -i input -passlogfile _0480mp4 -vf scale="trunc(oh*a/2)*2:480" -vf format=yuv420p -b:v 750k -minrate 375k -maxrate 1088k -c:v libx264 -pass 1 -an -f mp4 -y NUL
+    // ffmpeg -i input -passlogfile _0480mp4 -vf scale="trunc(oh*a/2)*2:480" -vf format=yuv420p -b:v 750k -minrate 375k -maxrate 1088k -c:v libx264 -pass 2 -c:a aac -b:a 128k 0480.mp4
+    // ffmpeg -i input -passlogfile _0720mp4 -vf scale="trunc(oh*a/2)*2:720" -vf format=yuv420p -b:v 1024k -minrate 512k -maxrate 1485k -c:v libx264 -pass 1 -an -f mp4 -y NUL
+    // ffmpeg -i input -passlogfile _0720mp4 -vf scale="trunc(oh*a/2)*2:720" -vf format=yuv420p -b:v 1024k -minrate 512k -maxrate 1485k -c:v libx264 -pass 2 -c:a aac -b:a 128k 0720.mp4
+    // ffmpeg -i input -passlogfile _1080mp4 -vf scale="trunc(oh*a/2)*2:1080" -vf format=yuv420p -b:v 1800k -minrate 900k -maxrate 2610k -c:v libx264 -pass 1 -an -f mp4 -y NUL
+    // ffmpeg -i input -passlogfile _1080mp4 -vf scale="trunc(oh*a/2)*2:1080" -vf format=yuv420p -b:v 1800k -minrate 900k -maxrate 2610k -c:v libx264 -pass 2 -c:a aac -b:a 128k 1080.mp4
 
     // ================ WEBM command lines ====================
     // ffmpeg -i input -passlogfile _0480web -vf scale="trunc(oh*a/2)*2:480" -b:v 750k -minrate 375k -maxrate 1088k -quality good -crf 33 -c:v libvpx-vp9 -c:a libopus -pass 1 -speed 4    0480.webm
@@ -116,7 +116,7 @@ public class FfmpegExecutor {
         preset1p.set(preset1p.indexOf("log_pref"), logFilePrefix);
         switch (type) {
             case "mp4":
-                preset1p.addAll(Arrays.asList("-c:v", "libx264", "-pass"));
+                preset1p.addAll(Arrays.asList("-vf", "format=yuv420p", "-c:v", "libx264", "-pass"));
                 List<String> preset2p = new ArrayList<>(preset1p);
                 preset1p.addAll(Arrays.asList("1", "-an", "-f", "mp4"));
                 preset2p.addAll(Arrays.asList("2", "-c:a", "aac", "-b:a", "128k"));

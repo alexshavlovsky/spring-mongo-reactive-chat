@@ -4,7 +4,7 @@ Pure Reactive WebFlux MongoDB WebSocket Chat. The chat is built on top of MongoD
 
 A prebuilt limited-functionality Bootstrap client is included and served by SpringBoot at `http://localhost:8080`
 
-The full-featured Angular PrimeNG frontend client which supports nick names and file attachments can be found here:
+The full-featured Angular PrimeNG frontend client which supports nick names, file attachments and video streaming can be found here:
 <br>
 [Angular 9 PrimeNg chat client](https://github.com/alexshavlovsky/primeng-chat-client.git).
 
@@ -24,20 +24,42 @@ A small Java stress testing client for this chat:
 ### MongoDB setup
 ```
 1. Start MongoDB:
-dcker run --name test-mongo -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret -d mongo
+docker run --name test-mongo -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret -d mongo
 
 2. Set appropriate spring.data.mongodb.host in the application.properties
 
-3. Build and run the Spring Boot application. Open the URL in a browser:
+3. In the application.properties set active profiles:
+spring.profiles.active=mongo-service, mongo-grid-attachments
+
+4. Build and run the Spring Boot application. Open the URL in a browser:
 localhost:8080
+
+5. The Angular client is recommended
 ```
 ### No-Mongo setup (in-memory chat, file-system attachments storage)
 ```
-1. In the application.properties set:
+1. In the application.properties set active profiles:
 spring.profiles.active=replay-service, file-system-attachments
  
 2. Build and run the Spring Boot application. Open the URL in a browser:
 localhost:8080
+
+3. The Angular client is recommended
+```
+### Video transcoder and video streaming setup (MongoDB and Angular client are mandatory)
+WARNING: the transcoding process of a single file may take several minutes depending on the file size
+```
+1. Start MongoDB:
+docker run --name test-mongo -p 27017:27017 -e MONGO_INITDB_ROOT_USERNAME=mongoadmin -e MONGO_INITDB_ROOT_PASSWORD=secret -d mongo
+
+2. Set appropriate spring.data.mongodb.host in the application.properties
+
+3. In the application.properties set active profiles:
+spring.profiles.active=mongo-service, mongo-grid-attachments, mongo-video-transcoder
+
+4. Build and run the Spring Boot application.
+
+5. Use the Angular client: https://github.com/alexshavlovsky/primeng-chat-client.git 
 ```
 ## Technology Stack
 
@@ -49,7 +71,8 @@ Protocol                  | Reactive WebSockets
 Server side thumbnails    | [Thumbnailator - a thumbnail generation library for Java](https://github.com/coobird/thumbnailator)
 PDF documents thumbnails  | [PDF renderer - Java library for rendering PDF documents](https://github.com/katjas/PDFrenderer)
 Video files thumbnails    | [The JAVE (Java Audio Video Encoder) library is Java wrapper on the ffmpeg project](https://github.com/a-schild/jave2)
-HTML video transcoder     | Background service using JAVE ffmpeg wrapper
+HTML video transcoder     | Background service using JAVE ffmpeg wrapper (x264 and WEBM codecs are supported)
+Video streaming           | Endpoint that supports partial requests
 Caching                   | Caffeine in-memory cache
 Frontend engine           | Pure JS + WebSockets + Bootstrap
 or (see description)      | Angular 10 + PrimeNG
@@ -85,18 +108,18 @@ or (see description)      | Angular 10 + PrimeNG
         array of sources
      +------------------------------------------------------+
      |                                                      |
-     ˅                                                      |
+     v                                                      |
 +----------+  message  +-----------------------+    +--------------------+
 | Frontend |---------->| Video file attachmens |--->| Compound Web Video |
 +----------+           +-----------------------+    +--------------------+
      ^                     |                           |             ^
-     |                     |                           ˅             |
+     |                     |                           v             |
      |                     |     +-------------------------+     +---------------------+
      |                     |     | Transcoding jobs queue: |<--->|  Transcoder facade  |
      |                     |     | 1 - MP4_480             |     +---------------------+
      |                     |     | 2 - WEBM_480            |             ^      ^
      |                     |     | 3 - MP4_720             |             |      |
-     |                     |     | 4 - WEBM_720            |             |      ˅
+     |                     |     | 4 - WEBM_720            |             |      v
      |                     |     | ...                     |             |  +-----------------+
      |                     |     +-------------------------+             |  | Ffmpeg executor |
      |                     |                                             |  +-----------------+
