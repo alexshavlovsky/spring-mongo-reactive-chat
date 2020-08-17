@@ -2,7 +2,6 @@ package com.ctzn.springmongoreactivechat.service.ffmpeglocator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ws.schild.jave.DefaultFFMPEGLocator;
 import ws.schild.jave.FFMPEGLocator;
 
 import java.io.File;
@@ -12,17 +11,15 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-// this custom locator substitutes ffmpeg native executable with version 4.3.0 for windows amd64 platform
-// see the line #56
 public class CustomFfmpegLocator extends FFMPEGLocator {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultFFMPEGLocator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CustomFfmpegLocator.class);
 
     /**
      * Trace the version of the bundled ffmpeg executable. It's a counter: every
      * time the bundled ffmpeg change it is incremented by 1.
      */
-    private static final String MY_EXE_VERSION = "2.7.3";
+    private static final String FFMPEG_VERSION = "4.3.1";
 
     /**
      * The ffmpeg executable file path.
@@ -53,7 +50,8 @@ public class CustomFfmpegLocator extends FFMPEGLocator {
         String arch = System.getProperty("os.arch");
 
         //File
-        File ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + ((isWindows && "amd64".equals(arch)) ? "4.3.0" : MY_EXE_VERSION) + suffix);
+        File ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + FFMPEG_VERSION + suffix);
+
         LOG.debug("Executable path: {}", ffmpegFile.getAbsolutePath());
 
         //Check the version of existing .exe file
@@ -95,7 +93,7 @@ public class CustomFfmpegLocator extends FFMPEGLocator {
      * @throws RuntimeException If an unexpected error occurs.
      */
     private void copyFile(String path, File dest) {
-        String resourceName = "nativebin/" + path;
+        String resourceName = "/nativebin/" + path;
         try {
             LOG.debug("Copy from resource <{}> to target <{}>", resourceName, dest.getAbsolutePath());
             InputStream is = getClass().getResourceAsStream(resourceName);

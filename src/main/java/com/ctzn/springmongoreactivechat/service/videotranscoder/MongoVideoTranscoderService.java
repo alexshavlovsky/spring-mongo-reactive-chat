@@ -104,7 +104,7 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
         }
 
         logInternal(job, "Create an executing process");
-        MultimediaObject multimediaObject = new MultimediaObject(sourceFilePath.toFile());
+        MultimediaObject multimediaObject = new MultimediaObject(sourceFilePath.toFile(), ffmpegLocatorService.getInstance());
         FfmpegExecutor executor = new FfmpegExecutor(ffmpegLocatorService.getInstance());
         Path result = executor.transcode(multimediaObject, tempPath.toFile(), job.getType(), job.getSize());
 

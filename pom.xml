@@ -61,7 +61,7 @@
         </dependency>
         <dependency>
             <groupId>ws.schild</groupId>
-            <artifactId>jave-all-deps</artifactId>
+            <artifactId>jave-core</artifactId>
             <version>2.7.3</version>
         </dependency>
 
@@ -101,6 +101,7 @@
     </dependencies>
 
     <build>
+        <finalName>chat-service</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
