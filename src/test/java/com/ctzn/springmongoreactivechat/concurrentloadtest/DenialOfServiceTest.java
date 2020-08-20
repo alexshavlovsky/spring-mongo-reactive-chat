@@ -37,8 +37,8 @@ public class DenialOfServiceTest {
 
     @Test
     public void test_1000_connections_dumb_dos() throws InterruptedException {
-        TestClientFactory attackers = new TestClientFactory("ws://localhost:8085/ws/", "reactor", false);
-        TestClientFactory validUsers = new TestClientFactory("ws://localhost:8085/ws/", "reactor", true);
+        TestClientFactory attackers = new TestClientFactory("ws://localhost:8085/api/ws/", "reactor", false);
+        TestClientFactory validUsers = new TestClientFactory("ws://localhost:8085/api/ws/", "reactor", true);
 
         sleep(1000);
 

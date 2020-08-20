@@ -21,7 +21,7 @@ public class ReactiveWebSocketConfiguration {
     public HandlerMapping webSocketHandlerMapping() {
         SimpleUrlHandlerMapping handlerMapping = new SimpleUrlHandlerMapping();
         handlerMapping.setOrder(1);
-        handlerMapping.setUrlMap(Collections.singletonMap("/ws/", messageHandler));
+        handlerMapping.setUrlMap(Collections.singletonMap("/api/ws/", messageHandler));
         return handlerMapping;
     }
 

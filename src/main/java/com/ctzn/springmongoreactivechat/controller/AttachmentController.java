@@ -20,7 +20,7 @@ import static com.ctzn.springmongoreactivechat.service.HttpUtil.newHttpError;
 
 @RestController
 @CrossOrigin
-@RequestMapping("/files/")
+@RequestMapping("/api/files/")
 public class AttachmentController {
 
     private Logger LOG = LoggerFactory.getLogger(AttachmentController.class);

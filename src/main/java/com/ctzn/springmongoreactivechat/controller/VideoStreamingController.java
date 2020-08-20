@@ -27,7 +27,7 @@ import static org.springframework.core.io.buffer.DataBufferUtils.takeUntilByteCo
 
 @RestController
 @CrossOrigin
-@RequestMapping("/videos/")
+@RequestMapping("/api/videos/")
 @Profile("mongo-video-transcoder")
 public class VideoStreamingController {
 

@@ -106,7 +106,7 @@ public class ConcurrentLoadTest {
         log("Done");
     }
 
-    private final String TEST_URI = "ws://localhost:8085/ws/";
+    private final String TEST_URI = "ws://localhost:8085/api/ws/";
     private final TestClientFactory wsBotFactory = new TestClientFactory(TEST_URI, "ws", true);
     private final TestClientFactory reactorBotFactory = new TestClientFactory(TEST_URI, "reactor", true);
 
