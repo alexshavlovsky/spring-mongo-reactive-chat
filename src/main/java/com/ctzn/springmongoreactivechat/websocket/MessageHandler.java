@@ -15,6 +15,9 @@ import org.springframework.web.reactive.socket.WebSocketSession;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.util.Random;
+
 import static com.ctzn.springmongoreactivechat.websocket.ClientStreamTransformers.*;
 
 @Component
@@ -63,7 +66,13 @@ public class MessageHandler implements WebSocketHandler {
                         .doFinally(sig -> chatBroker.removeClient(sessionId, LOG))
                 );
 
-        Mono<Void> output = session.send(outgoing.map(session::textMessage));
+        // this will prevent nginx ws session timeout
+        int pingInterval = 30_000 + new Random().nextInt(15_000);
+        Flux<byte[]> ping = Flux.interval(Duration.ofMillis(pingInterval)).map(Object::toString).map(String::getBytes);
+
+        Mono<Void> output = session.send(outgoing.map(session::textMessage)
+                .mergeWith(ping.map(payload -> session.pingMessage(dataBufferFactory -> dataBufferFactory.wrap(payload))))
+        );
 
         return Mono.zip(input, output).then();
     }

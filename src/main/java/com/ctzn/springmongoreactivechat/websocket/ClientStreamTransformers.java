@@ -21,6 +21,7 @@ import java.util.function.Function;
 class ClientStreamTransformers {
     static <T> Function<Flux<WebSocketMessage>, Publisher<T>> parseJsonMessage(DomainMapper mapper, Class<T> clazz) {
         return in -> in
+                .filter(m -> m.getType() == WebSocketMessage.Type.TEXT) // filter auxiliary messages such as a PONG message
                 .map(WebSocketMessage::getPayloadAsText)
                 .flatMap(json -> {
                     try {
