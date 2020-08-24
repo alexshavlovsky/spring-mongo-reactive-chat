@@ -12,14 +12,36 @@ A small Java stress testing client for this chat:
 <br>
 [Stress testing client for WebSocket chat](https://github.com/alexshavlovsky/ws-chat-test-java-client).
 
+Build script for docker-compose (MongoDB profile, Angular client, nginx):
+<br>
+[MongoChat build scripts](https://github.com/alexshavlovsky/mongo-chat-ci-template.git). 
+
 ## Screenshots
 
+### JS Bootstrap
 <p align="center">
   <img src="screenshots/1_client_1.png?raw=true" width="360"/>
   <img src="screenshots/2_client_2.png?raw=true" width="360"/>  
 </p>
 
+### Angular PrimeNG
+<p align="center">
+  <img src="screenshots/3_angular_login.png?raw=true" width="720"/>  
+</p>
+<p align="center">
+  <img src="screenshots/4_angular_chat.png?raw=true" width="720"/>  
+</p>
+
 ## Build and run instructions
+
+### Docker-compose (MongoDB profile, Angular client, nginx)
+Prerequisites: git, JDK8, docker, docker-compose
+```
+1. git clone https://github.com/alexshavlovsky/mongo-chat-ci-template.git
+2. cd mongo-chat-ci-template
+3. Linux:   sh build.sh
+   Windows: build.cmd
+```
 
 ### MongoDB setup
 ```
@@ -74,8 +96,9 @@ Video files thumbnails    | [The JAVE (Java Audio Video Encoder) library is Java
 HTML video transcoder     | Background service using JAVE ffmpeg wrapper (x264 and WEBM codecs are supported)
 Video streaming           | Endpoint that supports partial requests
 Caching                   | Caffeine in-memory cache
-Frontend engine           | Pure JS + WebSockets + Bootstrap
+Frontend engine           | Pure JS + WebSockets + Bootstrap (limited-functionality)
 or (see description)      | Angular 10 + PrimeNG
+Prod packaging            | Docker Engine Container, Alpine Linux, OpenJDK, SpringBoot JAR
 
 ## Chat protocol summary
 ```
