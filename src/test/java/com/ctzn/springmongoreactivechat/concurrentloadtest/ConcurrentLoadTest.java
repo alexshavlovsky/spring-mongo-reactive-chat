@@ -4,12 +4,11 @@ import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.ChatClient
 import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.MockChatClient;
 import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.ServerMessage;
 import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.User;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -18,19 +17,19 @@ import java.util.stream.Stream;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles({"test", "replay-service", "file-system-attachments"})
-@RunWith(SpringRunner.class)
-public class ConcurrentLoadTest {
+@Disabled
+class ConcurrentLoadTest {
 
     private void log(String s) {
         System.out.println(s);
     }
 
     private void sleep() throws InterruptedException {
-        Thread.sleep(200);
+        Thread.sleep(400);
     }
 
     private void sleep(int botsNum) throws InterruptedException {
-        Thread.sleep(200 + botsNum * 20);
+        Thread.sleep(400 + botsNum * 40);
     }
 
     private TestClient newBot(TestClientFactory botFactory) throws InterruptedException {
@@ -76,19 +75,19 @@ public class ConcurrentLoadTest {
                                 return a;
                             }), Map::putAll);
             log(chat.getUser().getNick() + ": " + msgMap.entrySet().stream().map(e -> e.getKey() + ": " + e.getValue().size()).collect(Collectors.joining(", ", "{", "}")));
-            Assert.assertEquals("A server greeting was received", 1, msgMap.get("snapshot").size());
+            Assertions.assertEquals(1, msgMap.get("snapshot").size(), "A server greeting was received");
 
             List<String> actualSetTypingList = msgMap.get("setTyping").stream().map(ServerMessage::getClient).map(ChatClient::getNick).collect(Collectors.toList());
             List<String> expectedSetTypingList = bots.stream().map(b -> b.getChat().getUser().getNick()).collect(Collectors.toList());
-            Assert.assertTrue("All setTyping messages were received", actualSetTypingList.containsAll(expectedSetTypingList));
+            Assertions.assertTrue(actualSetTypingList.containsAll(expectedSetTypingList), "All setTyping messages were received");
 
             List<String> actualMsgList = msgMap.get("msg").stream().map(ServerMessage::getPayload).collect(Collectors.toList());
-            Assert.assertTrue("All messages were received", actualMsgList.containsAll(messagesList));
+            Assertions.assertTrue(actualMsgList.containsAll(messagesList), "All messages were received");
 
             Set<String> actualUserNicksList = chat.getChatClients().stream().map(ChatClient::getNick).collect(Collectors.toSet());
             Set<String> actualUserIdsList = chat.getChatClients().stream().map(ChatClient::getClientId).collect(Collectors.toSet());
-            Assert.assertEquals("All nicks were visible", userNicksList, actualUserNicksList);
-            Assert.assertEquals("All ids were visible", userIdsList, actualUserIdsList);
+            Assertions.assertEquals(userNicksList, actualUserNicksList, "All nicks were visible");
+            Assertions.assertEquals(userIdsList, actualUserIdsList, "All ids were visible");
         });
 
         log("Disconnect bots");
@@ -96,8 +95,8 @@ public class ConcurrentLoadTest {
         sleep(botsNum);
 
         Set<String> actualClients = chatObserver.getChat().getChatClients().stream().map(ChatClient::getNick).collect(Collectors.toSet());
-        Assert.assertEquals("Exactly one client is visible", actualClients.size(), 1);
-        Assert.assertEquals("Observer is visible", actualClients.toArray()[0], chatObserver.getChat().getUser().getNick());
+        Assertions.assertEquals(actualClients.size(), 1, "Exactly one client is visible");
+        Assertions.assertEquals(actualClients.toArray()[0], chatObserver.getChat().getUser().getNick(), "Observer is visible");
 
         log("Disconnect the observer");
         chatObserver.close();
@@ -111,19 +110,19 @@ public class ConcurrentLoadTest {
     private final TestClientFactory reactorBotFactory = new TestClientFactory(TEST_URI, "reactor", true);
 
     @Test
-    public void test_25_bots() throws InterruptedException {
+    void test_25_bots() throws InterruptedException {
         spawnBots(25, reactorBotFactory);
         spawnBots(25, wsBotFactory);
     }
 
     @Test
-    public void test_50_bots() throws InterruptedException {
+    void test_50_bots() throws InterruptedException {
         spawnBots(50, reactorBotFactory);
         spawnBots(50, wsBotFactory);
     }
 
     @Test
-    public void test_100_bots() throws InterruptedException {
+    void test_100_bots() throws InterruptedException {
         spawnBots(100, reactorBotFactory);
         spawnBots(100, wsBotFactory);
     }

@@ -3,12 +3,11 @@ package com.ctzn.springmongoreactivechat.concurrentloadtest;
 import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.ChatClient;
 import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.MockChatClient;
 import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.User;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +21,11 @@ import static java.lang.Thread.sleep;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles({"test", "replay-service", "file-system-attachments"})
-@RunWith(SpringRunner.class)
-public class DenialOfServiceTest {
+@Disabled
+class DenialOfServiceTest {
 
-    private void log(String s) {
-        System.out.println(s);
+    private void log(Object o) {
+        System.out.println(o.toString());
     }
 
     private TestClient newBot(TestClientFactory botFactory) throws InterruptedException {
@@ -36,7 +35,7 @@ public class DenialOfServiceTest {
     }
 
     @Test
-    public void test_1000_connections_dumb_dos() throws InterruptedException {
+    void test_1000_connections_dumb_dos() throws InterruptedException {
         TestClientFactory attackers = new TestClientFactory("ws://localhost:8085/api/ws/", "reactor", false);
         TestClientFactory validUsers = new TestClientFactory("ws://localhost:8085/api/ws/", "reactor", true);
 
@@ -44,38 +43,38 @@ public class DenialOfServiceTest {
 
         int attackersNum = 1000;
 
-        System.out.println("Add some observers");
+        log("Add some observers");
         List<TestClient> observers = new ArrayList<>();
         for (int i = 0; i < 10; i++) observers.add(newBot(validUsers));
 
-        System.out.println("First wave");
+        log("First wave");
         for (int i = 0; i < attackersNum; i++) {
-            if (i % 100 == 0) System.out.println(i);
+            if (i % 100 == 0) log(i);
             newBot(attackers);
-            Thread.sleep(1);
+            Thread.sleep(2);
         }
         TestClient reference = newBot(attackers);
         while (!reference.disconnected()) {
-            System.out.println("Wait for timeout and cleanup...");
+            log("Wait for timeout and cleanup...");
             sleep(1000);
         }
         sleep(1000);
 
-        System.out.println("Test wave");
+        log("Test wave");
         Random random = new Random();
         for (int i = 0; i < attackersNum; i++) {
-            if (i % 100 == 0) System.out.println(i);
+            if (i % 100 == 0) log(i);
             TestClient bot = newBot(attackers);
             if (random.nextInt(10) != 0) bot.getChat().sendSetTyping();
             if (random.nextInt(50) == 0) observers.add(newBot(validUsers));
-            sleep(1);
+            sleep(2);
         }
         reference = newBot(attackers);
         while (!reference.disconnected()) {
-            System.out.println("Wait for timeout and cleanup...");
+            log("Wait for timeout and cleanup...");
             sleep(1000);
         }
-        System.out.println("Add some observers");
+        log("Add some observers");
         for (int i = 0; i < 10; i++) observers.add(newBot(validUsers));
         sleep(1000);
 
@@ -87,9 +86,9 @@ public class DenialOfServiceTest {
             MockChatClient chat = bot.getChat();
             Set<String> actualUserNicksList = chat.getChatClients().stream().map(ChatClient::getNick).collect(Collectors.toSet());
             Set<String> actualUserIdsList = chat.getChatClients().stream().map(ChatClient::getClientId).collect(Collectors.toSet());
-            Assert.assertEquals("The number of visible bots corresponds to the number of observers", observers.size(), chat.getChatClients().size());
-            Assert.assertEquals("All nicks are visible", userNicksList, actualUserNicksList);
-            Assert.assertEquals("All ids are visible", userIdsList, actualUserIdsList);
+            Assertions.assertEquals(observers.size(), chat.getChatClients().size(), "The number of visible bots corresponds to the number of observers");
+            Assertions.assertEquals(userNicksList, actualUserNicksList, "All nicks are visible");
+            Assertions.assertEquals(userIdsList, actualUserIdsList, "All ids are visible");
         });
 
         log("Disconnect observers");
