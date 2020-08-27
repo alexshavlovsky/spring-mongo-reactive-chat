@@ -1,6 +1,7 @@
 package com.ctzn.springmongoreactivechat.websocket;
 
 import com.ctzn.springmongoreactivechat.domain.DomainMapper;
+import com.ctzn.springmongoreactivechat.domain.dto.ChatClient;
 import com.ctzn.springmongoreactivechat.domain.dto.IncomingMessage;
 import com.ctzn.springmongoreactivechat.service.AttachmentHandlerService;
 import com.ctzn.springmongoreactivechat.service.BroadcastEmitterService;
@@ -54,7 +55,9 @@ public class MessageHandler implements WebSocketHandler {
                 .transform(handleClientMessage(sessionId, chatBroker, broadcastMessageService, broadcastEmitterService, attachmentHandlerService, mapper, LOG))
                 .then();
 
-        Flux<String> outgoing = incoming.transform(parseGreetingTimeout(sessionId, GREETING_TIMEOUT))
+        Flux<ChatClient> validClient = incoming.transform(parseGreetingTimeout(sessionId, GREETING_TIMEOUT)).publish().autoConnect(2);
+
+        Flux<String> outgoing = validClient
                 .flatMap(chatClient -> chatBroker.addClient(chatClient, LOG)
                         .concatWith(Flux.merge(
                                 chatBroker.getTopic(),
@@ -68,7 +71,7 @@ public class MessageHandler implements WebSocketHandler {
 
         // this will prevent nginx ws session timeout
         int pingInterval = 30_000 + new Random().nextInt(15_000);
-        Flux<byte[]> ping = Flux.interval(Duration.ofMillis(pingInterval)).map(Object::toString).map(String::getBytes);
+        Flux<byte[]> ping = validClient.flatMap(chatClient -> Flux.interval(Duration.ofMillis(pingInterval)).map(Object::toString).map(String::getBytes));
 
         Mono<Void> output = session.send(outgoing.map(session::textMessage)
                 .mergeWith(ping.map(payload -> session.pingMessage(dataBufferFactory -> dataBufferFactory.wrap(payload))))
