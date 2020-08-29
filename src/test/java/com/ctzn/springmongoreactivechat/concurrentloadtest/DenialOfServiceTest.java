@@ -21,7 +21,6 @@ import static java.lang.Thread.sleep;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles({"test", "replay-service", "file-system-attachments"})
-@Disabled
 class DenialOfServiceTest {
 
     private void log(Object o) {
@@ -36,8 +35,8 @@ class DenialOfServiceTest {
 
     @Test
     void test_1000_connections_dumb_dos() throws InterruptedException {
-        TestClientFactory attackers = new TestClientFactory("ws://localhost:8085/api/ws/", "reactor", false);
-        TestClientFactory validUsers = new TestClientFactory("ws://localhost:8085/api/ws/", "reactor", true);
+        TestClientFactory attackers = new TestClientFactory("http://localhost:8085/api/ws/", "reactor", false);
+        TestClientFactory validUsers = new TestClientFactory("http://localhost:8085/api/ws/", "reactor", true);
 
         sleep(1000);
 

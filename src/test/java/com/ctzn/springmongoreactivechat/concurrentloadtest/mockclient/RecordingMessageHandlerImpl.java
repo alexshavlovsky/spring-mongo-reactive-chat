@@ -31,11 +31,11 @@ class RecordingMessageHandlerImpl implements RecordingMessageHandler {
 
     @Override
     public Collection<ChatClient> getChatClients() {
-        return snapshotHolder.getClients();
+        return new ArrayList<>(snapshotHolder.getClients());
     }
 
     @Override
     public Collection<ServerMessage> getServerMessages() {
-        return serverMessages;
+        return new ArrayList<>(serverMessages);
     }
 }

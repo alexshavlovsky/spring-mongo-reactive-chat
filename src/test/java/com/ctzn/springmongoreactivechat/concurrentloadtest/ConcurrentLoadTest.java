@@ -5,7 +5,6 @@ import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.MockChatCl
 import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.ServerMessage;
 import com.ctzn.springmongoreactivechat.concurrentloadtest.mockclient.User;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -15,21 +14,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.lang.Thread.sleep;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles({"test", "replay-service", "file-system-attachments"})
-@Disabled
 class ConcurrentLoadTest {
 
     private void log(String s) {
         System.out.println(s);
-    }
-
-    private void sleep() throws InterruptedException {
-        Thread.sleep(400);
-    }
-
-    private void sleep(int botsNum) throws InterruptedException {
-        Thread.sleep(400 + botsNum * 40);
     }
 
     private TestClient newBot(TestClientFactory botFactory) throws InterruptedException {
@@ -45,13 +37,31 @@ class ConcurrentLoadTest {
 
         log("Connect bots");
         TestClient chatObserver = newBot(botFactory);
-        sleep();
         for (int i = 0; i < botsNum; i++) bots.add(newBot(botFactory));
-        sleep(botsNum);
+
+        Set<String> botsIds = bots.stream().map(TestClient::getChat).map(MockChatClient::getUser).map(User::getId).collect(Collectors.toSet());
+
+        while (true) {
+            long actual = bots.stream().filter(bot -> bot.getChat().getChatClients().stream().filter(chatClient -> botsIds.contains(chatClient.getClientId())).count() == botsNum).count();
+            int expected = botsNum;
+            if (actual == expected) break;
+            log("Wait for clients: " + actual + "/" + expected);
+            sleep(500);
+        }
 
         log("Send setTyping");
         for (TestClient bot : bots) bot.getChat().sendSetTyping();
-        sleep(botsNum);
+
+        while (true) {
+            long actual = bots.stream().filter(bot ->
+                    bot.getChat().getServerMessages().stream()
+                            .filter(serverMessage -> "setTyping".equals(serverMessage.getType()) && botsIds.contains(serverMessage.getClient().getClientId())).count() == botsNum
+            ).count();
+            int expected = botsNum;
+            if (actual == expected) break;
+            log("Wait for setTyping: " + actual + "/" + expected);
+            sleep(500);
+        }
 
         log("Send messages");
         List<String> messagesList = new ArrayList<>();
@@ -60,7 +70,17 @@ class ConcurrentLoadTest {
             bot.getChat().sendMsg(msg);
             messagesList.add(msg);
         }
-        sleep(botsNum);
+
+        while (true) {
+            long actual = bots.stream().filter(bot ->
+                    bot.getChat().getServerMessages().stream()
+                            .filter(serverMessage -> "msg".equals(serverMessage.getType()) && botsIds.contains(serverMessage.getClient().getClientId())).count() == botsNum
+            ).count();
+            int expected = botsNum;
+            if (actual == expected) break;
+            log("Wait for messages: " + actual + "/" + expected);
+            sleep(500);
+        }
 
         log("Make assertions");
         Supplier<Stream<User>> users = () -> Stream.concat(Stream.of(chatObserver), bots.stream()).map(TestClient::getChat).map(MockChatClient::getUser);
@@ -92,7 +112,14 @@ class ConcurrentLoadTest {
 
         log("Disconnect bots");
         for (TestClient bot : bots) bot.close();
-        sleep(botsNum);
+
+        while (true) {
+            long actual = chatObserver.getChat().getChatClients().stream().filter(chatClient -> botsIds.contains(chatClient.getClientId())).count();
+            int expected = 0;
+            if (actual == expected) break;
+            log("Wait for all the clients are disconnected: " + actual + "/" + expected);
+            sleep(100);
+        }
 
         Set<String> actualClients = chatObserver.getChat().getChatClients().stream().map(ChatClient::getNick).collect(Collectors.toSet());
         Assertions.assertEquals(actualClients.size(), 1, "Exactly one client is visible");
@@ -100,12 +127,16 @@ class ConcurrentLoadTest {
 
         log("Disconnect the observer");
         chatObserver.close();
-        sleep();
+
+        while (!chatObserver.disconnected()) {
+            log("Wait for chat observer is disconnected...");
+            sleep(100);
+        }
 
         log("Done");
     }
 
-    private final String TEST_URI = "ws://localhost:8085/api/ws/";
+    private final String TEST_URI = "http://localhost:8085/api/ws/";
     private final TestClientFactory wsBotFactory = new TestClientFactory(TEST_URI, "ws", true);
     private final TestClientFactory reactorBotFactory = new TestClientFactory(TEST_URI, "reactor", true);
 
