@@ -42,10 +42,11 @@ class ConcurrentLoadTest {
         Set<String> botsIds = bots.stream().map(TestClient::getChat).map(MockChatClient::getUser).map(User::getId).collect(Collectors.toSet());
 
         while (true) {
+            long seen = bots.stream().filter(bot -> bot.getChat().getChatClients().stream().filter(chatClient -> botsIds.contains(chatClient.getClientId())).count() > 0).count();
             long actual = bots.stream().filter(bot -> bot.getChat().getChatClients().stream().filter(chatClient -> botsIds.contains(chatClient.getClientId())).count() == botsNum).count();
             int expected = botsNum;
             if (actual == expected) break;
-            log("Wait for clients: " + actual + "/" + expected);
+            log("Wait for clients: " + seen + "/" + actual + "/" + expected);
             sleep(500);
         }
 
@@ -150,11 +151,5 @@ class ConcurrentLoadTest {
     void test_50_bots() throws InterruptedException {
         spawnBots(50, reactorBotFactory);
         spawnBots(50, wsBotFactory);
-    }
-
-    @Test
-    void test_100_bots() throws InterruptedException {
-        spawnBots(100, reactorBotFactory);
-        spawnBots(100, wsBotFactory);
     }
 }

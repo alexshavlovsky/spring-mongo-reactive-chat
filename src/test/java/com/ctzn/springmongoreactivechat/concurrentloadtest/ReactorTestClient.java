@@ -11,15 +11,28 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.resources.ConnectionProvider;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class ReactorTestClient implements TestClient {
 
+    private static AtomicInteger counter = new AtomicInteger(0);
+    private final int id = counter.getAndIncrement();
+
+    private final static ConnectionProvider connectionProvider = ConnectionProvider.builder("ReactorTestClientConnectionProvider")
+            .maxConnections(500)
+            .pendingAcquireMaxCount(500)
+            .pendingAcquireTimeout(Duration.ofSeconds(5))
+            .build();
+    private final static WebSocketClient client = new ReactorNettyWebSocketClient(HttpClient.create(connectionProvider));
+
     private final URI uri;
     private final WebSocketHandler handler;
-    private final static WebSocketClient client = new ReactorNettyWebSocketClient();
     private Disposable disposable;
     private final UnicastProcessor<String> processor = UnicastProcessor.create();
     private final FluxSink<String> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
@@ -41,7 +54,7 @@ class ReactorTestClient implements TestClient {
 
     @Override
     public void connect() {
-        disposable = client.execute(uri, handler).subscribe();
+        disposable = client.execute(uri, handler).doOnError(e -> System.out.println(id + ": " + e)).subscribe();
     }
 
     @Override
