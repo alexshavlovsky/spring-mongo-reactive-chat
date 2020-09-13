@@ -2,7 +2,11 @@ package com.ctzn.springmongoreactivechat.service.videotranscoder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ws.schild.jave.*;
+import ws.schild.jave.ConversionOutputAnalyzer;
+import ws.schild.jave.MultimediaObject;
+import ws.schild.jave.process.ProcessLocator;
+import ws.schild.jave.process.ProcessWrapper;
+import ws.schild.jave.process.ffmpeg.DefaultFFMPEGLocator;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -32,13 +36,13 @@ public class FfmpegExecutor {
             Pattern.compile("^\\s*video:\\S+\\s+audio:\\S+\\s+subtitle:\\S+\\s+global headers:\\S+.*$",
                     Pattern.CASE_INSENSITIVE);
 
-    private final FFMPEGLocator locator;
+    private final ProcessLocator locator;
 
     public FfmpegExecutor() {
         this.locator = new DefaultFFMPEGLocator();
     }
 
-    public FfmpegExecutor(FFMPEGLocator locator) {
+    public FfmpegExecutor(ProcessLocator locator) {
         this.locator = locator;
     }
 
@@ -46,7 +50,7 @@ public class FfmpegExecutor {
         targetFolder = targetFolder.getAbsoluteFile();
         targetFolder.mkdirs();
 
-        FFMPEGExecutor ffmpeg = locator.createExecutor();
+        ProcessWrapper ffmpeg = locator.createExecutor();
         ffmpeg.addArgument("-i");
         if (multimediaObject.isURL()) ffmpeg.addArgument(multimediaObject.getURL().toString());
         else ffmpeg.addArgument(multimediaObject.getFile().getAbsolutePath());

@@ -2,7 +2,7 @@ package com.ctzn.springmongoreactivechat.service.ffmpeglocator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ws.schild.jave.FFMPEGLocator;
+import ws.schild.jave.process.ProcessLocator;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,8 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-public class CustomFfmpegLocator extends FFMPEGLocator {
-
+public class CustomFfmpegLocator implements ProcessLocator {
     private static final Logger LOG = LoggerFactory.getLogger(CustomFfmpegLocator.class);
 
     /**
@@ -81,7 +80,7 @@ public class CustomFfmpegLocator extends FFMPEGLocator {
     }
 
     @Override
-    public String getFFMPEGExecutablePath() {
+    public String getExecutablePath() {
         return path;
     }
 

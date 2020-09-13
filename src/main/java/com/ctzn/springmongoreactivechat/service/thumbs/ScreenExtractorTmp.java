@@ -2,10 +2,10 @@ package com.ctzn.springmongoreactivechat.service.thumbs;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ws.schild.jave.FFMPEGExecutor;
-import ws.schild.jave.FFMPEGLocator;
 import ws.schild.jave.MultimediaObject;
-import ws.schild.jave.Utils;
+import ws.schild.jave.process.ProcessLocator;
+import ws.schild.jave.process.ProcessWrapper;
+import ws.schild.jave.utils.Utils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -17,9 +17,9 @@ class ScreenExtractorTmp {
 
     private static final Logger LOG = LoggerFactory.getLogger(ScreenExtractorTmp.class);
 
-    private final FFMPEGLocator locator;
+    private final ProcessLocator locator;
 
-    ScreenExtractorTmp(FFMPEGLocator locator) {
+    ScreenExtractorTmp(ProcessLocator locator) {
         this.locator = locator;
     }
 
@@ -43,7 +43,7 @@ class ScreenExtractorTmp {
             LOG.debug("Access denied checking destination folder", e);
         }
 
-        FFMPEGExecutor ffmpeg = locator.createExecutor();
+        ProcessWrapper ffmpeg = locator.createExecutor();
         if (keyframesSeeking) {
             ffmpeg.addArgument("-ss");
             ffmpeg.addArgument(Utils.buildTimeDuration(millis));
