@@ -2,7 +2,10 @@ package com.ctzn.springmongoreactivechat.service.ffmpeglocator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ws.schild.jave.Version;
 import ws.schild.jave.process.ProcessLocator;
+import ws.schild.jave.process.ProcessWrapper;
+import ws.schild.jave.process.ffmpeg.FFMPEGProcess;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,21 +17,11 @@ import java.nio.file.StandardCopyOption;
 public class CustomFfmpegLocator implements ProcessLocator {
     private static final Logger LOG = LoggerFactory.getLogger(CustomFfmpegLocator.class);
 
-    /**
-     * Trace the version of the bundled ffmpeg executable. It's a counter: every
-     * time the bundled ffmpeg change it is incremented by 1.
-     */
-    private static final String FFMPEG_VERSION = "4.3.1";
 
-    /**
-     * The ffmpeg executable file path.
-     */
+    /** The ffmpeg executable file path. */
     private final String path;
 
-    /**
-     * It builds the default FFMPEGLocator, exporting the ffmpeg executable on a
-     * temp file.
-     */
+    /** It builds the default FFMPEGLocator, exporting the ffmpeg executable on a temp file. */
     public CustomFfmpegLocator() {
         String os = System.getProperty("os.name").toLowerCase();
         boolean isWindows = os.contains("windows");
@@ -38,7 +31,8 @@ public class CustomFfmpegLocator implements ProcessLocator {
         // Dir Folder
         File dirFolder = new File(System.getProperty("java.io.tmpdir"), "jave/");
         if (!dirFolder.exists()) {
-            LOG.debug("Creating jave temp folder to place executables in <{}>", dirFolder.getAbsolutePath());
+            LOG.debug(
+                    "Creating jave temp folder to place executables in <{}>", dirFolder.getAbsolutePath());
             dirFolder.mkdirs();
         } else {
             LOG.debug("Jave temp folder exists in <{}>", dirFolder.getAbsolutePath());
@@ -48,12 +42,11 @@ public class CustomFfmpegLocator implements ProcessLocator {
         String suffix = isWindows ? ".exe" : (isMac ? "-osx" : "");
         String arch = System.getProperty("os.arch");
 
-        //File
-        File ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + FFMPEG_VERSION + suffix);
-
+        // File
+        File ffmpegFile = new File(dirFolder, "ffmpeg-" + arch + "-" + Version.getVersion() + suffix);
         LOG.debug("Executable path: {}", ffmpegFile.getAbsolutePath());
 
-        //Check the version of existing .exe file
+        // Check the version of existing .exe file
         if (ffmpegFile.exists()) {
             // OK, already present
             LOG.debug("Executable exists in <{}>", ffmpegFile.getAbsolutePath());
@@ -65,10 +58,7 @@ public class CustomFfmpegLocator implements ProcessLocator {
         // Need a chmod?
         if (!isWindows) {
             try {
-                Runtime.getRuntime().exec(new String[]
-                        {
-                                "/bin/chmod", "755", ffmpegFile.getAbsolutePath()
-                        });
+                Runtime.getRuntime().exec(new String[] {"/bin/chmod", "755", ffmpegFile.getAbsolutePath()});
             } catch (IOException e) {
                 LOG.error("Error setting executable via chmod", e);
             }
@@ -76,7 +66,14 @@ public class CustomFfmpegLocator implements ProcessLocator {
 
         // Everything seems okay
         path = ffmpegFile.getAbsolutePath();
-        LOG.debug("ffmpeg executable found: {}", path);
+        if (ffmpegFile.exists())
+        {
+            LOG.debug("ffmpeg executable found: {}", path);
+        }
+        else
+        {
+            LOG.error("ffmpeg executable NOT found: {}", path);
+        }
     }
 
     @Override
@@ -99,9 +96,23 @@ public class CustomFfmpegLocator implements ProcessLocator {
             if (is == null) {
                 // Use this for Java 9+ only if required
                 resourceName = "ws/schild/jave/nativebin/" + path;
-                LOG.debug("Alternative copy from SystemResourceAsStream <{}> to target <{}>", resourceName, dest.getAbsolutePath());
+                LOG.debug(
+                        "Alternative copy from SystemResourceAsStream <{}> to target <{}>",
+                        resourceName,
+                        dest.getAbsolutePath());
                 is = ClassLoader.getSystemResourceAsStream(resourceName);
             }
+            if (is == null) {
+                // Use this for spring boot with different class loaders
+                resourceName = "ws/schild/jave/nativebin/" + path;
+                LOG.debug(
+                        "Alternative copy from Thread.currentThread().getContextClassLoader() <{}> to target <{}>",
+                        resourceName,
+                        dest.getAbsolutePath());
+                ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+                is = classloader.getResourceAsStream(resourceName);
+            }
+
             if (is != null) {
                 if (copy(is, dest.getAbsolutePath())) {
                     if (dest.exists()) {
@@ -121,7 +132,9 @@ public class CustomFfmpegLocator implements ProcessLocator {
                 LOG.error("Could not find ffmpeg platform executable in resources for <{}>", resourceName);
             }
         } catch (NullPointerException ex) {
-            LOG.error("Could not find ffmpeg executable for {} is the correct platform jar included?", resourceName);
+            LOG.error(
+                    "Could not find ffmpeg executable for {} is the correct platform jar included?",
+                    resourceName);
             throw ex;
         }
     }
@@ -129,7 +142,7 @@ public class CustomFfmpegLocator implements ProcessLocator {
     /**
      * Copy a file from source to destination.
      *
-     * @param source      The name of the bundled file.
+     * @param source The name of the bundled file.
      * @param destination the destination
      * @return True if succeeded , False if not
      */
@@ -144,5 +157,10 @@ public class CustomFfmpegLocator implements ProcessLocator {
         }
 
         return success;
+    }
+
+    @Override
+    public ProcessWrapper createExecutor() {
+        return new FFMPEGProcess(getExecutablePath());
     }
 }

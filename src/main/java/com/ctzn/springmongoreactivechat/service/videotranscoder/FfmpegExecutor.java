@@ -6,7 +6,6 @@ import ws.schild.jave.ConversionOutputAnalyzer;
 import ws.schild.jave.MultimediaObject;
 import ws.schild.jave.process.ProcessLocator;
 import ws.schild.jave.process.ProcessWrapper;
-import ws.schild.jave.process.ffmpeg.DefaultFFMPEGLocator;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,10 +36,6 @@ public class FfmpegExecutor {
                     Pattern.CASE_INSENSITIVE);
 
     private final ProcessLocator locator;
-
-    public FfmpegExecutor() {
-        this.locator = new DefaultFFMPEGLocator();
-    }
 
     public FfmpegExecutor(ProcessLocator locator) {
         this.locator = locator;

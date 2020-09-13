@@ -1,10 +1,13 @@
 package com.ctzn.springmongoreactivechat.service.videotranscoder;
 
 import com.ctzn.springmongoreactivechat.domain.CompoundWebVideo;
+import com.ctzn.springmongoreactivechat.domain.DomainMapper;
 import com.ctzn.springmongoreactivechat.domain.TranscodingJob;
 import com.ctzn.springmongoreactivechat.domain.dto.AttachmentModel;
 import com.ctzn.springmongoreactivechat.domain.dto.VideoSource;
+import com.ctzn.springmongoreactivechat.domain.dto.VideoSourceUpdate;
 import com.ctzn.springmongoreactivechat.repository.CompoundWebVideoRepository;
+import com.ctzn.springmongoreactivechat.service.BroadcastEmitterService;
 import com.ctzn.springmongoreactivechat.service.FileUtil;
 import com.ctzn.springmongoreactivechat.service.attachments.AttachmentService;
 import com.ctzn.springmongoreactivechat.service.ffmpeglocator.FfmpegLocatorService;
@@ -40,13 +43,24 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
     private FfmpegLocatorService ffmpegLocatorService;
     private TranscodingJobService transcodingJobService;
     private CompoundWebVideoRepository compoundWebVideoRepository;
+    private BroadcastEmitterService broadcastEmitterService;
+    private DomainMapper domainMapper;
 
-    public MongoVideoTranscoderService(ReactiveMongoOperations mongo, AttachmentService attachmentService, FfmpegLocatorService ffmpegLocatorService, TranscodingJobService transcodingJobService, CompoundWebVideoRepository compoundWebVideoRepository) {
+    public MongoVideoTranscoderService(ReactiveMongoOperations mongo,
+                                       AttachmentService attachmentService,
+                                       FfmpegLocatorService ffmpegLocatorService,
+                                       TranscodingJobService transcodingJobService,
+                                       CompoundWebVideoRepository compoundWebVideoRepository,
+                                       BroadcastEmitterService broadcastEmitterService,
+                                       DomainMapper domainMapper
+    ) {
         this.mongo = mongo;
         this.attachmentService = attachmentService;
         this.ffmpegLocatorService = ffmpegLocatorService;
         this.transcodingJobService = transcodingJobService;
         this.compoundWebVideoRepository = compoundWebVideoRepository;
+        this.broadcastEmitterService = broadcastEmitterService;
+        this.domainMapper = domainMapper;
     }
 
     @Override
@@ -120,10 +134,15 @@ public class MongoVideoTranscoderService implements VideoTranscoderService {
         CompoundWebVideo compoundWebVideo = compoundWebVideoRepository.findById(compoundWebVideoId)
                 .blockOptional().orElseThrow(() -> new FileNotFoundException("CompoundWevVideo does not exist: " + compoundWebVideoId));
         compoundWebVideo.getSources().add(videoSource);
+
         compoundWebVideoRepository.save(compoundWebVideo).block();
+
         if (transcodingJobService.countPendingJobsByCompoundWebVideo_id(compoundWebVideoId) == 0) {
             logInternal(job, "Delete temp files");
             FileSystemUtils.deleteRecursively(tempPath);
         }
+
+        // publish new video source to update video attachment component on the client side
+        broadcastEmitterService.send(domainMapper.toMessage(new VideoSourceUpdate(compoundWebVideo.getAttachment().getFileId(), compoundWebVideo)));
     }
 }

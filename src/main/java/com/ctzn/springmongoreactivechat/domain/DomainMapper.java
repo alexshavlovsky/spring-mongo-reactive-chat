@@ -2,6 +2,7 @@ package com.ctzn.springmongoreactivechat.domain;
 
 import com.ctzn.springmongoreactivechat.domain.dto.ChatSnapshot;
 import com.ctzn.springmongoreactivechat.domain.dto.ChatSnapshotUpdate;
+import com.ctzn.springmongoreactivechat.domain.dto.VideoSourceUpdate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
@@ -29,5 +30,9 @@ public class DomainMapper {
 
     public Message toMessage(ChatSnapshotUpdate snapshotUpdate) {
         return Message.newSnapshotUpdate(toJson(snapshotUpdate));
+    }
+
+    public Message toMessage(VideoSourceUpdate videoSourceUpdate) {
+        return Message.newVideoSourceUpdate(toJson(videoSourceUpdate));
     }
 }

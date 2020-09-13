@@ -33,6 +33,10 @@ public class Message {
         return newServerMessage("info", text);
     }
 
+    static Message newVideoSourceUpdate(String payload) {
+        return newServerMessage("videoSource", payload);
+    }
+
     static Message newSnapshot(String payload) {
         return newServerMessage("snapshot", payload);
     }
