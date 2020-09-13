@@ -15,6 +15,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import ws.schild.jave.MultimediaObject;
+import ws.schild.jave.ScreenExtractor;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -22,7 +23,6 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.UUID;
 
 // TODO: This class is too large and needs to be refactored
@@ -90,7 +90,7 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
     }
 
     private InputStream videoAsImage(DataBuffer dataBuffer) throws Exception {
-        Path  tempPath = FileUtil.getTempFolder();
+        Path tempPath = FileUtil.getTempFolder();
         String randomFileName = UUID.randomUUID().toString();
         File sourceFile = tempPath.resolve(randomFileName).toFile();
         Path thumbPath = tempPath.resolve(randomFileName + ".jpg");
@@ -100,8 +100,8 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
         try {
             MultimediaObject multimediaObject = new MultimediaObject(sourceFile, ffmpegLocatorService.getInstance());
             long duration = multimediaObject.getInfo().getDuration();
-            ScreenExtractorTmp screenExtractor = new ScreenExtractorTmp(ffmpegLocatorService.getInstance());
-            screenExtractor.renderOneImage(multimediaObject, -1, -1, duration / 2, thumbPath.toFile(), 2, true);
+            ScreenExtractor screenExtractor = new ScreenExtractor(ffmpegLocatorService.getInstance());
+            screenExtractor.renderOneImage(multimediaObject, -1, -1, duration / 2, thumbPath.toFile(), 2);
             if (Files.exists(thumbPath))
                 return new ByteArrayInputStream(Files.readAllBytes(thumbPath));
             else
