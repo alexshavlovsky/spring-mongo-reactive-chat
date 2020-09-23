@@ -18,6 +18,54 @@
         <java.version>1.8</java.version>
     </properties>
 
+<!--    <profiles>-->
+<!--        <profile>-->
+<!--            <id>windows</id>-->
+<!--            <activation>-->
+<!--                <os>-->
+<!--                    <family>windows</family>-->
+<!--                </os>-->
+<!--            </activation>-->
+<!--            <dependencies>-->
+<!--                <dependency>-->
+<!--                    <groupId>ws.schild</groupId>-->
+<!--                    <artifactId>jave-nativebin-win64</artifactId>-->
+<!--                    <version>${jave.version}</version>-->
+<!--                </dependency>-->
+<!--            </dependencies>-->
+<!--        </profile>-->
+<!--        <profile>-->
+<!--            <id>unix</id>-->
+<!--            <activation>-->
+<!--                <os>-->
+<!--                    <family>unix</family>-->
+<!--                </os>-->
+<!--            </activation>-->
+<!--            <dependencies>-->
+<!--                <dependency>-->
+<!--                    <groupId>ws.schild</groupId>-->
+<!--                    <artifactId>jave-nativebin-linux64</artifactId>-->
+<!--                    <version>${jave.version}</version>-->
+<!--                </dependency>-->
+<!--            </dependencies>-->
+<!--        </profile>-->
+<!--        <profile>-->
+<!--            <id>mac</id>-->
+<!--            <activation>-->
+<!--                <os>-->
+<!--                    <family>mac</family>-->
+<!--                </os>-->
+<!--            </activation>-->
+<!--            <dependencies>-->
+<!--                <dependency>-->
+<!--                    <groupId>ws.schild</groupId>-->
+<!--                    <artifactId>jave-nativebin-osx64</artifactId>-->
+<!--                    <version>${jave.version}</version>-->
+<!--                </dependency>-->
+<!--            </dependencies>-->
+<!--        </profile>-->
+<!--    </profiles>-->
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -102,6 +150,11 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-enforcer-plugin</artifactId>-->
+<!--                <version>3.0.0-M3</version>-->
+<!--            </plugin>-->
         </plugins>
     </build>
 

@@ -17,11 +17,8 @@ import java.nio.file.StandardCopyOption;
 public class CustomFfmpegLocator implements ProcessLocator {
     private static final Logger LOG = LoggerFactory.getLogger(CustomFfmpegLocator.class);
 
-
-    /** The ffmpeg executable file path. */
     private final String path;
 
-    /** It builds the default FFMPEGLocator, exporting the ffmpeg executable on a temp file. */
     public CustomFfmpegLocator() {
         String os = System.getProperty("os.name").toLowerCase();
         boolean isWindows = os.contains("windows");
@@ -58,7 +55,7 @@ public class CustomFfmpegLocator implements ProcessLocator {
         // Need a chmod?
         if (!isWindows) {
             try {
-                Runtime.getRuntime().exec(new String[] {"/bin/chmod", "755", ffmpegFile.getAbsolutePath()});
+                Runtime.getRuntime().exec(new String[]{"/bin/chmod", "755", ffmpegFile.getAbsolutePath()});
             } catch (IOException e) {
                 LOG.error("Error setting executable via chmod", e);
             }
@@ -66,12 +63,9 @@ public class CustomFfmpegLocator implements ProcessLocator {
 
         // Everything seems okay
         path = ffmpegFile.getAbsolutePath();
-        if (ffmpegFile.exists())
-        {
+        if (ffmpegFile.exists()) {
             LOG.debug("ffmpeg executable found: {}", path);
-        }
-        else
-        {
+        } else {
             LOG.error("ffmpeg executable NOT found: {}", path);
         }
     }
@@ -81,37 +75,13 @@ public class CustomFfmpegLocator implements ProcessLocator {
         return path;
     }
 
-    /**
-     * Copies a file bundled in the package to the supplied destination.
-     *
-     * @param path The name of the bundled file.
-     * @param dest The destination.
-     * @throws RuntimeException If an unexpected error occurs.
-     */
     private void copyFile(String path, File dest) {
-        String resourceName = "/nativebin/" + path;
+        String resourceName = "nativebin/" + path;
         try {
             LOG.debug("Copy from resource <{}> to target <{}>", resourceName, dest.getAbsolutePath());
-            InputStream is = getClass().getResourceAsStream(resourceName);
-            if (is == null) {
-                // Use this for Java 9+ only if required
-                resourceName = "ws/schild/jave/nativebin/" + path;
-                LOG.debug(
-                        "Alternative copy from SystemResourceAsStream <{}> to target <{}>",
-                        resourceName,
-                        dest.getAbsolutePath());
-                is = ClassLoader.getSystemResourceAsStream(resourceName);
-            }
-            if (is == null) {
-                // Use this for spring boot with different class loaders
-                resourceName = "ws/schild/jave/nativebin/" + path;
-                LOG.debug(
-                        "Alternative copy from Thread.currentThread().getContextClassLoader() <{}> to target <{}>",
-                        resourceName,
-                        dest.getAbsolutePath());
-                ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-                is = classloader.getResourceAsStream(resourceName);
-            }
+
+            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+            InputStream is = classloader.getResourceAsStream(resourceName);
 
             if (is != null) {
                 if (copy(is, dest.getAbsolutePath())) {
@@ -139,13 +109,6 @@ public class CustomFfmpegLocator implements ProcessLocator {
         }
     }
 
-    /**
-     * Copy a file from source to destination.
-     *
-     * @param source The name of the bundled file.
-     * @param destination the destination
-     * @return True if succeeded , False if not
-     */
     private boolean copy(InputStream source, String destination) {
         boolean success = true;
 
