@@ -1,10 +1,6 @@
 package com.ctzn.springmongoreactivechat.service.thumbs;
 
-import com.ctzn.springmongoreactivechat.service.FileUtil;
 import com.ctzn.springmongoreactivechat.service.attachments.AttachmentService;
-import com.ctzn.springmongoreactivechat.service.ffmpeglocator.FfmpegLocatorService;
-import com.sun.pdfview.PDFFile;
-import com.sun.pdfview.PDFPage;
 import net.coobird.thumbnailator.Thumbnails;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,18 +10,11 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import ws.schild.jave.MultimediaObject;
-import ws.schild.jave.ScreenExtractor;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.*;
-import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.UUID;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.List;
 
-// TODO: This class is too large and needs to be refactored
 @Service
 @Qualifier("subject")
 public class ThumbsServiceJpg240x240 implements ThumbsService {
@@ -33,11 +22,11 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
     private Logger LOG = LoggerFactory.getLogger(ThumbsServiceJpg240x240.class);
 
     private AttachmentService attachmentService;
-    private FfmpegLocatorService ffmpegLocatorService;
+    private List<ThumbBuilderResolver> thumbBuilders;
 
-    public ThumbsServiceJpg240x240(AttachmentService attachmentService, FfmpegLocatorService ffmpegLocatorService) {
+    public ThumbsServiceJpg240x240(AttachmentService attachmentService, List<ThumbBuilderResolver> thumbBuilders) {
         this.attachmentService = attachmentService;
-        this.ffmpegLocatorService = ffmpegLocatorService;
+        this.thumbBuilders = thumbBuilders;
     }
 
     @Override
@@ -61,54 +50,24 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
     }
 
     private byte[] generateThumb(String thumbType, DataBuffer dataBuffer) throws Exception {
-        ByteArrayOutputStream arrayBuffer = new ByteArrayOutputStream();
-        Thumbnails.Builder builder;
-        switch (thumbType) {
-            case "pdf":
-                builder = Thumbnails.of(pdfAsImage(dataBuffer));
-                break;
-            case "video":
-                builder = Thumbnails.of(videoAsImage(dataBuffer));
-                break;
-            default:
-                builder = Thumbnails.of(dataBuffer.asInputStream(true));
+        // thumb builders from context (thumbType = PDF, video, ect.)
+        Thumbnails.Builder builder = resolveThumbBuilder(thumbType, dataBuffer);
+        // default thumb builder for an image attachment
+        if (builder == null) builder = Thumbnails.of(dataBuffer.asInputStream(true));
+        return renderThumb(builder);
+    }
+
+    private Thumbnails.Builder resolveThumbBuilder(String thumbType, DataBuffer dataBuffer) throws Exception {
+        for (ThumbBuilderResolver thumbBuilder : thumbBuilders) {
+            Thumbnails.Builder builder = thumbBuilder.resolve(thumbType, dataBuffer);
+            if (builder != null) return builder;
         }
+        return null;
+    }
+
+    private byte[] renderThumb(Thumbnails.Builder builder) throws IOException {
+        ByteArrayOutputStream arrayBuffer = new ByteArrayOutputStream();
         builder.size(240, 240).outputFormat("JPEG").outputQuality(0.9).toOutputStream(arrayBuffer);
         return arrayBuffer.toByteArray();
-    }
-
-    private BufferedImage pdfAsImage(DataBuffer dataBuffer) throws Exception {
-        PDFFile pdf = new PDFFile(dataBuffer.asByteBuffer());
-        if (pdf.getNumPages() == 0) throw new Exception("PDF renderer: Can't parse any page");
-        PDFPage page = pdf.getPage(0);
-        Rectangle rect = new Rectangle(0, 0, (int) page.getBBox().getWidth(), (int) page.getBBox().getHeight());
-        BufferedImage bufferedImage = new BufferedImage(rect.width, rect.height, BufferedImage.TYPE_INT_RGB);
-        Image image = page.getImage(rect.width, rect.height, rect, null, true, true);
-        Graphics2D bufImageGraphics = bufferedImage.createGraphics();
-        bufImageGraphics.drawImage(image, 0, 0, null);
-        return bufferedImage;
-    }
-
-    private InputStream videoAsImage(DataBuffer dataBuffer) throws Exception {
-        Path tempPath = FileUtil.getTempFolder();
-        String randomFileName = UUID.randomUUID().toString();
-        File sourceFile = tempPath.resolve(randomFileName).toFile();
-        Path thumbPath = tempPath.resolve(randomFileName + ".jpg");
-        try (FileChannel fc = new FileOutputStream(sourceFile).getChannel()) {
-            fc.write(dataBuffer.asByteBuffer());
-        }
-        try {
-            MultimediaObject multimediaObject = new MultimediaObject(sourceFile, ffmpegLocatorService.getInstance());
-            long duration = multimediaObject.getInfo().getDuration();
-            ScreenExtractor screenExtractor = new ScreenExtractor(ffmpegLocatorService.getInstance());
-            screenExtractor.renderOneImage(multimediaObject, -1, -1, duration / 2, thumbPath.toFile(), 2);
-            if (Files.exists(thumbPath))
-                return new ByteArrayInputStream(Files.readAllBytes(thumbPath));
-            else
-                throw new RuntimeException("FFmpeg did not yield a screenshot image");
-        } finally {
-            if (sourceFile.exists()) sourceFile.delete();
-            if (Files.exists(thumbPath)) Files.delete(thumbPath);
-        }
     }
 }
