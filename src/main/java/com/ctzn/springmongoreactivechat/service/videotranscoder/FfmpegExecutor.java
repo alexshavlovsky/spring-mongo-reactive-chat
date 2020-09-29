@@ -42,6 +42,9 @@ public class FfmpegExecutor {
     }
 
     private void encode(MultimediaObject multimediaObject, File targetFolder, String fileName, List<String> args) throws Exception {
+        String os = System.getProperty("os.name").toLowerCase();
+        boolean isWindows = os.contains("windows");
+
         targetFolder = targetFolder.getAbsoluteFile();
         targetFolder.mkdirs();
 
@@ -51,7 +54,7 @@ public class FfmpegExecutor {
         else ffmpeg.addArgument(multimediaObject.getFile().getAbsolutePath());
         args.forEach(ffmpeg::addArgument);
         ffmpeg.addArgument("-y");
-        if (fileName == null) ffmpeg.addArgument("NUL"); // TODO: add correct output for linux
+        if (fileName == null) ffmpeg.addArgument(isWindows ? "NUL" : "/dev/null");
         else ffmpeg.addArgument(new File(targetFolder, fileName).getAbsolutePath());
 
         try {
