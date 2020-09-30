@@ -17,14 +17,14 @@ import java.util.List;
 
 @Service
 @Qualifier("subject")
-public class ThumbsServiceJpg240x240 implements ThumbsService {
+public class ThumbsServiceJpg320x320 implements ThumbsService {
 
-    private Logger LOG = LoggerFactory.getLogger(ThumbsServiceJpg240x240.class);
+    private Logger LOG = LoggerFactory.getLogger(ThumbsServiceJpg320x320.class);
 
     private AttachmentService attachmentService;
     private List<ThumbBuilderResolver> thumbBuilders;
 
-    public ThumbsServiceJpg240x240(AttachmentService attachmentService, List<ThumbBuilderResolver> thumbBuilders) {
+    public ThumbsServiceJpg320x320(AttachmentService attachmentService, List<ThumbBuilderResolver> thumbBuilders) {
         this.attachmentService = attachmentService;
         this.thumbBuilders = thumbBuilders;
     }
@@ -67,7 +67,7 @@ public class ThumbsServiceJpg240x240 implements ThumbsService {
 
     private byte[] renderThumb(Thumbnails.Builder builder) throws IOException {
         ByteArrayOutputStream arrayBuffer = new ByteArrayOutputStream();
-        builder.size(240, 240).outputFormat("JPEG").outputQuality(0.9).toOutputStream(arrayBuffer);
+        builder.size(320, 320).outputFormat("JPEG").outputQuality(0.9).toOutputStream(arrayBuffer);
         return arrayBuffer.toByteArray();
     }
 }
