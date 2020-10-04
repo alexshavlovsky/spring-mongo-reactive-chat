@@ -44,6 +44,7 @@ public class DbSeeder {
                 .flatMap(e -> e ? Mono.empty() : mongo.createCollection(Message.class, options).then());
     }
 
+
     @Bean
     CommandLineRunner startup() {
         return args -> {
@@ -54,7 +55,9 @@ public class DbSeeder {
                     Mono.just(doDropHistory)
                             .flatMap(d -> d ? dropIfExists(Message.class) : Mono.empty())
                             .switchIfEmpty(createIfAbsents(Message.class, options))
-                            .switchIfEmpty(mongo.save(Message.newInfo("Service started")).then()).block();
+                            .switchIfEmpty(
+                                    MessageSeeder.INIT.map(m -> mongo.save(m).then()).then()
+                            ).block();
                 } else
                     throw new RuntimeException(new Exception("Mongo is not responding. To disable this error set the property shutdown_on_db_connection_error = false"));
             } catch (Exception e) {
