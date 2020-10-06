@@ -22,6 +22,8 @@ public class MongoBroadcastMessageServiceAdapter implements BroadcastMessageServ
     @Override
     public Flux<Message> getTopic() {
         return cache;
+//        Instant limit = Instant.now().minus(2, ChronoUnit.HOURS);
+//        return mongo.tail(Query.query(Criteria.where("timestamp").gt(Date.from(limit))), Message.class);
     }
 
     @Override

@@ -7,6 +7,6 @@ class TestMessagesSeederTest {
 
     @Test
     void getTestMessages() {
-        StepVerifier.create(MessageSeeder.getTestMessages(10)).expectNextCount(10).verifyComplete();
+        StepVerifier.create(MessageSeeder.getInitSequence(10)).expectNextCount(11).verifyComplete();
     }
 }

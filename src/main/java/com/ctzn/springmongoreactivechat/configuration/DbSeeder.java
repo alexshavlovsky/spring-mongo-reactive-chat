@@ -25,6 +25,9 @@ public class DbSeeder {
     @Value("${chat_history_drop_on_startup}")
     boolean doDropHistory;
 
+    @Value("${test_messages_count}")
+    int testMessagesCount;
+
     @Value("${shutdown_on_db_connection_error}")
     boolean doShutdownOnDbConnectionError;
 
@@ -56,7 +59,7 @@ public class DbSeeder {
                             .flatMap(d -> d ? dropIfExists(Message.class) : Mono.empty())
                             .switchIfEmpty(createIfAbsents(Message.class, options))
                             .switchIfEmpty(
-                                    MessageSeeder.INIT.map(m -> mongo.save(m).then()).then()
+                                    MessageSeeder.getInitSequence(testMessagesCount).concatMap(m -> mongo.save(m)).then()
                             ).block();
                 } else
                     throw new RuntimeException(new Exception("Mongo is not responding. To disable this error set the property shutdown_on_db_connection_error = false"));
