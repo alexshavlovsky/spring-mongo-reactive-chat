@@ -10,6 +10,8 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 
+import javax.annotation.PostConstruct;
+
 @Service
 @Profile("replay-service")
 public class ReplayBroadcastMessageServiceAdapter implements BroadcastMessageService {
@@ -20,8 +22,9 @@ public class ReplayBroadcastMessageServiceAdapter implements BroadcastMessageSer
     private final ReplayProcessor<Message> processor = ReplayProcessor.create(50);
     private final FluxSink<Message> sink = processor.sink(FluxSink.OverflowStrategy.BUFFER);
 
-    public ReplayBroadcastMessageServiceAdapter() {
-        MessageSeeder.getInitSequence(testMessagesCount).map(sink::next).then().block();
+    @PostConstruct
+    public void saveInitSequence() {
+        MessageSeeder.getInitSequence(testMessagesCount).map(sink::next).blockLast();
     }
 
     @Override
