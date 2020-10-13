@@ -13,10 +13,12 @@ import reactor.core.publisher.Mono;
 public class MongoBroadcastMessageServiceAdapter implements BroadcastMessageService {
     private final ReactiveMongoOperations mongo;
     private final Flux<Message> cache;
+    private final String cappedCollection = "messagesCapped";
+    private final String persistentCollection = "messagesPersisted";
 
     public MongoBroadcastMessageServiceAdapter(ReactiveMongoOperations mongo) {
         this.mongo = mongo;
-        cache = mongo.tail(new BasicQuery("{}"), Message.class).cache(50);
+        cache = mongo.tail(new BasicQuery("{}"), Message.class, cappedCollection).cache(50);
     }
 
     @Override
@@ -28,6 +30,6 @@ public class MongoBroadcastMessageServiceAdapter implements BroadcastMessageServ
 
     @Override
     public Mono<Message> saveMessage(Message message) {
-        return mongo.save(message);
+        return mongo.save(message, persistentCollection).then(mongo.save(message, cappedCollection));
     }
 }
