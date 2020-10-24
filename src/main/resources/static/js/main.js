@@ -12,7 +12,7 @@ const CLIENT_ID = loadUuid();
 // ws connection
 
 const wsBaseUrl = (l = window.location) => ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + ":" + l.port;
-const WS_API_URL = wsBaseUrl() + '/ws/';
+const WS_API_URL = wsBaseUrl() + '/api/ws/';
 
 let wsClient;
 let snapshot;
